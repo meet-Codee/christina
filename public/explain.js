@@ -56,5 +56,8 @@ export class ExplainBoard {
     if (this.reply !== reply || tier() === 'lite') return;
     let beat = 0; this.starts.forEach((start, n) => { if (i >= start) beat = n; });
     this.go(beat);
+    this.host.querySelectorAll('.kw').forEach(el => el.classList.remove('kw'));
+    const words = this.host.querySelectorAll('.spoken-subtitle .w');
+    words[i - this.starts[beat]]?.classList.add('kw');
   }
 }

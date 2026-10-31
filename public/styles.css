@@ -868,3 +868,7 @@ input[type='range'] { width: 100%; accent-color: var(--cyan); }
 .beat-copy .spoken-subtitle { font-size: .85rem; }
 .stage-visual svg { max-height: 13rem; }
 .lesson-busy { position: sticky; top: 0; z-index: 3; padding: .7rem 1rem; background: #112531; border: 1px solid var(--cyan); border-radius: 1rem; }
+
+.lp-inner { grid-template-columns: minmax(0, 1fr); }
+.lp-front { width: 100%; min-width: 0; }
+@media(min-width:2000px) { .app { max-width: 112rem; margin-inline: auto; } }

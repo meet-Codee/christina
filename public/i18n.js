@@ -199,7 +199,20 @@ const SETUP = {
 };
 export function lessonCopy(code) {
  const t = SETUP[code] || SETUP['en-IN'];
- return { mode: t[0], modes: t.slice(1,5), sample: t[5], turn: t[6], board: t[7], transcript: t[8], next: t[9] };
+ const intro = {
+ 'en-IN': 'Understand the idea. See it happen. Try it your way.',
+ 'kn-IN': 'ವಿಷಯವನ್ನು ಅರ್ಥಮಾಡಿಕೋ. ಚಿತ್ರದಲ್ಲಿ ನೋಡು. ನಿನ್ನ ರೀತಿಯಲ್ಲಿ ಪ್ರಯತ್ನಿಸು.',
+ 'hi-IN': 'बात समझो। चित्र में देखो। अपने तरीके से कोशिश करो।',
+ 'ta-IN': 'கருத்தைப் புரிந்துகொள். படத்தில் பார். உன் வழியில் முயற்சி செய்.',
+ 'te-IN': 'భావనను అర్థం చేసుకో. చిత్రంలో చూడు. నీ పద్ధతిలో ప్రయత్నించు.',
+ 'ml-IN': 'ആശയം മനസ്സിലാക്കൂ. ചിത്രത്തിൽ കാണൂ. സ്വന്തം രീതിയിൽ ശ്രമിക്കൂ.',
+ 'mr-IN': 'कल्पना समजून घ्या. चित्रात पाहा. स्वतः प्रयत्न करा.',
+ 'bn-IN': 'ধারণা বুঝুন। ছবিতে দেখুন। নিজের মতো চেষ্টা করুন।',
+ 'gu-IN': 'વિચાર સમજો. ચિત્રમાં જુઓ. તમારી રીતે પ્રયાસ કરો.',
+ 'pa-IN': 'ਵਿਚਾਰ ਸਮਝੋ। ਤਸਵੀਰ ਵਿੱਚ ਦੇਖੋ। ਆਪਣੇ ਤਰੀਕੇ ਨਾਲ ਕੋਸ਼ਿਸ਼ ਕਰੋ।',
+ 'od-IN': 'ଧାରଣା ବୁଝନ୍ତୁ। ଚିତ୍ରରେ ଦେଖନ୍ତୁ। ନିଜେ ଚେଷ୍ଟା କରନ୍ତୁ।',
+ };
+ return { intro: intro[code] || intro['en-IN'], mode: t[0], modes: t.slice(1,5), sample: t[5], turn: t[6], board: t[7], transcript: t[8], next: t[9] };
 }
 export const EXAMPLE_META = [
   { icon: 'i-equation', subject: 'maths' },

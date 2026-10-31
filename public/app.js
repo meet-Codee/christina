@@ -153,6 +153,7 @@ const voice = new Voice({
     document.body.classList.toggle('speaking', on);
     if (on) setMood('speaking');
     else if (moodState === 'speaking') setMood('idle');
+    if (!on) document.querySelectorAll('#explainBoard .kw').forEach(el => el.classList.remove('kw'));
     if (!on) document.querySelectorAll('.listen-btn.playing').forEach((b) => b.classList.remove('playing'));
   },
   onDeviceFallback: (e) => {
@@ -171,7 +172,7 @@ function applyLanguage({ animateIt = false } = {}) {
   $('langName').textContent = `${l.native} · ${S.prefs.grade} · ${lessonCopy(l.code).modes[MIXES.findIndex(m => m.id === S.prefs.mix)]}`;
   $('setLangName').textContent = `${l.native} · ${l.name}`;
   $('title').textContent = l.ui.title;
-  $('sub').textContent = l.ui.sub;
+  $('sub').textContent = lessonCopy(l.code).intro;
   if (animateIt) swapText($('greet'), l.ui.greet, l.tag); else if (!S.introRunning) $('greet').textContent = l.ui.greet;
   $('ask').dataset.base = l.ui.ask;
   $('ask').placeholder = l.ui.ask;
@@ -295,7 +296,7 @@ function buildCoins(box, onPick) {
     c.setAttribute('aria-label', `Class ${g}`);
     c.setAttribute('aria-checked', String(S.prefs.grade === g));
     c.onclick = () => {
-      S.prefs.grade = g; savePrefs();
+      S.prefs.grade = g; savePrefs(); applyLanguage();
       box.querySelectorAll('.coin').forEach((x) => x.setAttribute('aria-checked', String(x === c)));
       if (!reduced()) { c.classList.remove('spin'); void c.offsetWidth; c.classList.add('spin'); }
       onPick?.(g);
@@ -1423,7 +1424,7 @@ function renderMix() {
   const on = box.querySelector('[aria-checked="true"]');
   const ind = box.querySelector('.mix-ind');
   if (on && ind) requestAnimationFrame(() => { ind.style.width = `${on.offsetWidth}px`; ind.style.transform = `translateX(${on.offsetLeft}px)`; });
-  $('setMix')?.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mix === S.prefs.mix)));
+  $('setMix')?.querySelectorAll('button').forEach((b) => { b.setAttribute('aria-checked', String(b.dataset.mix === S.prefs.mix)); b.textContent = lessonCopy(S.prefs.lang).modes[MIXES.findIndex(m => m.id === b.dataset.mix)]; });
 }
 
 // About: live service status

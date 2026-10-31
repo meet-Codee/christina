@@ -1,6 +1,6 @@
 // sw.js: F9 offline-ready shell. The app shell, fonts and KaTeX are cached; AI calls always go to the network.
 // Spoken lines live in their own cache ('christina-voice-v1', managed by voice.js), so cached voice replays offline.
-const VERSION = 'christina-shell-v2.1.0';
+const VERSION = 'christina-shell-v2.1.1';
 const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/motion.js', '/fx.js', '/i18n.js', '/orb.js', '/aurora.js', '/voice.js', '/mic.js', '/call.js', '/scratchpad.js', '/sky.js', '/visual.js', '/explain.js', '/share.js', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 const CDN = /^https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net)\//;
 
