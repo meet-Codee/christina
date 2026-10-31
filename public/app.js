@@ -13,6 +13,7 @@ import { Mic, recognizer, blobToBase64 } from './mic.js';
 import { openCall, callActive } from './call.js';
 import { openPad, padOpen, closePad } from './scratchpad.js';
 import { openSky, skyOpen, closeSky, addStar, streakDays, loadSky } from './sky.js';
+import { ExplainBoard } from './explain.js';
 import { renderVisual } from './visual.js';
 import { shareSolved } from './share.js';
 
@@ -390,6 +391,10 @@ async function finishOnboarding() {
 
 // ───────────────────────── Lesson ─────────────────────────
 const log = $('log');
+const explain = new ExplainBoard($('explainBoard'), {
+  ui, stop: () => voice.stop(), answer: text => routeInput(text), type: () => $('ask').focus(),
+  mic: () => $('micBtn').click(), pad: () => $('padBtn').click(),
+});
 
 function newLesson(problem, extra = {}) {
   return { id: uid(), problem, photo: null, subject: 'maths', practice: false, history: [], hint: 1, maxRung: 1, hintsUsed: 0, wrongInRow: 0, solved: false, board: [], terms: [], teachScore: null, startedAt: Date.now(), stars: 0, lang: S.prefs.lang, grade: S.prefs.grade, ...extra };
@@ -435,6 +440,7 @@ async function goHome() {
     $('hero').hidden = false;
     moveOrb('home');
     log.innerHTML = '';
+  explain.clear();
     resetPanels();
     renderHeroRecent();
   });
@@ -453,6 +459,7 @@ export async function startLesson(problem, { photo = null, subject = 'maths', fr
   S.lesson = newLesson(text, { photo, subject, practice });
   resetPanels();
   log.innerHTML = '';
+  explain.clear();
   setProblem(text, photo);
   closeSheet();
   await goLesson(fromCard);
@@ -561,6 +568,11 @@ export function addTutor(r, { speak = true, history = true, extra, kind = 'reply
   scrollLog();
   if (history && S.lesson) S.lesson.history.push({ role: 'assistant', content: r.screen });
   S.lastReply = { el, r };
+  if (r.beats?.length) {
+    explain.show(r, () => speakMessage(el, r, el.querySelector('.listen-btn')));
+    $('transcriptLabel').textContent = lessonCopy(r.language).transcript;
+    $('transcript').open = isPhone();
+  }
   if (speak && r.speak) speakMessage(el, r, el.querySelector('.listen-btn'));
   else setMood('idle');
   return el;
@@ -594,6 +606,7 @@ function karaokeMap(textEl, speakText) {
 function speakMessage(el, r, btn) {
   const textEl = el.querySelector('.spoken-subtitle') || el.querySelector('.msg-text');
   if (btn?.classList.contains('playing')) { voice.stop(); return; }
+  if (r.beats?.length) explain.show(r, () => speakMessage(el, r, btn));
   const { tokens, map } = karaokeMap(textEl, r.speak);
   let lit = null;
   const clear = () => { lit?.classList.remove('kw'); lit = null; };
@@ -603,6 +616,7 @@ function speakMessage(el, r, btn) {
   voice.say(r.speak, {
     lang: r.language || S.prefs.lang,
     onWord: (i) => {
+      explain.word(i, r);
       if (S.prefs.muted) return;
       const t = tokens[map[i]];
       if (t && t !== lit) { clear(); t.classList.add('kw'); lit = t; }
@@ -614,6 +628,7 @@ function speakMessage(el, r, btn) {
 }
 
 function addError(err, retry) {
+  $('transcript').open = true;
   removeThinking();
   const offline = err.code === 'offline';
   const el = document.createElement('div');
@@ -1055,6 +1070,7 @@ async function handlePhoto(file) {
   S.photoFull = shot.full;
   // Show the lesson with the photo being scanned (laser line + shimmer skeleton).
   log.innerHTML = '';
+  explain.clear();
   resetPanels();
   S.lesson = null;
   $('problemText').innerHTML = '<span class="skeleton" style="width:85%"></span><span class="skeleton" style="width:60%"></span>';
@@ -1272,6 +1288,7 @@ async function resumeLesson(id) {
   S.mode = 'ask';
   resetPanels();
   log.innerHTML = '';
+  explain.clear();
   setProblem(r.problem, null);
   closeSheet();
   await goLesson();

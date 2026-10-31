@@ -135,7 +135,30 @@ function triangle(s) {
   return `<svg viewBox="0 0 ${W} ${H}" role="img">${out}</svg>`;
 }
 
-const RENDER = { number_line: numberLine, bar_model: barModel, fraction, graph, triangle };
+// Fixed schematic templates. All model-provided labels are escaped.
+function schematic(s) {
+  const texts = Array.isArray(s.labels) ? s.labels : [];
+  const text = (x, y, value) => label(x, y, value || '?', .1, { size: 18 });
+  let shape = '';
+  if (s.type === 'balance') {
+    shape = `<path d="M320 95V245M250 245H390M140 95H500M140 95L85 180H195ZM500 95L445 180H555Z"/><circle cx="320" cy="95" r="10" fill="${C.violet}"/>`;
+    shape += text(140, 220, s.left) + text(500, 220, s.right) + text(320, 50, s.operation || '=');
+  } else if (s.type === 'circuit') {
+    shape = `<path d="M175 150V65H450V150M450 190V245H175V185M145 150H205M155 185H195"/><circle cx="450" cy="170" r="25"/><path d="M433 153L467 187M467 153L433 187"/>`;
+    shape += text(175, 285, texts[0]) + text(450, 285, texts[1]);
+  } else if (s.type === 'light_ray') {
+    shape = `<path d="M160 70L320 220L480 70M120 225H520"/><path d="M320 40V220" stroke-dasharray="8 8"/><path d="M280 160L290 192L258 180M439 110L466 85L458 119"/>`;
+    shape += text(145, 40, texts[0]) + text(490, 40, texts[1]) + text(320, 275, texts[2]);
+  } else if (s.type === 'food_chain') {
+    [80,240,400,560].forEach((x,i) => { shape += `<rect x="${x-60}" y="90" width="120" height="90" rx="22" fill="${C.violet}" fill-opacity=".15"/>`; shape += text(x, 140, texts[i]); if(i<3) shape += `<path d="M${x+65} 135H${x+90}L${x+82} 127M${x+90} 135L${x+82} 143"/>`; });
+  } else if (s.type === 'cell') {
+    shape = `<ellipse cx="320" cy="150" rx="180" ry="105" fill="${C.violet}" fill-opacity=".12"/><ellipse cx="320" cy="150" rx="165" ry="90"/><circle cx="320" cy="150" r="33" fill="${C.cyan}" fill-opacity=".15"/><path d="M320 150L450 35M165 115L70 55M250 190L130 270"/>`;
+    shape += text(475, 28, texts[0]) + text(80, 38, texts[1]) + text(130, 292, texts[2]);
+  }
+  return `<svg viewBox="0 0 640 310" role="img"><g fill="none" stroke="${C.cyan}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${shape}</g></svg>`;
+}
+
+const RENDER = { balance: schematic, circuit: schematic, light_ray: schematic, food_chain: schematic, cell: schematic, number_line: numberLine, bar_model: barModel, fraction, graph, triangle };
 
 export function renderVisual(spec) {
   const fn = RENDER[spec?.type];
