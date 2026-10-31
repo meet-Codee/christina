@@ -85,6 +85,7 @@
           <div class="log" id="log" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation with Christina"></div></details>
           <div class="chips" id="chips" role="toolbar" aria-label="Help">
             <button class="chip hint" id="hintBtn" type="button" data-magnetic data-ripple><svg class="ic"><use href="#i-bulb"/></svg><span id="hintLabel">Hint</span><kbd data-k="H">H</kbd></button>
+            <button class="chip basics" id="basicsBtn" type="button" data-magnetic data-ripple><svg class="ic"><use href="#i-book"/></svg><span id="basicsLabel">Teach basics</span></button>
             <button class="chip show" id="showBtn" type="button" data-magnetic data-ripple><svg class="ic"><use href="#i-eye"/></svg><span id="showLabel">Show me</span></button>
             <button class="chip pad" id="padBtn" type="button" data-magnetic data-ripple><svg class="ic"><use href="#i-pencil"/></svg><span id="padLabel">Show working</span></button>
             <button class="chip teach" id="teachChip" type="button" data-magnetic data-ripple hidden><svg class="ic"><use href="#i-teach"/></svg><span id="teachChipLabel">Explain it back</span></button>
@@ -220,10 +221,10 @@
   <section class="onboard" id="onboard" hidden aria-label="Welcome">
     <div class="ob-brand" lang="en">CHRISTINA <span>YOUR PERSONAL LEARNING SPACE</span></div>
     <div class="ob-greet" id="obGreet" aria-hidden="true"></div>
-    <h1 class="ob-title" id="obTitle">Choose your language</h1>
+    <div class="ob-step-head"><span class="ob-step-num">01</span><h1 class="ob-title" id="obTitle">Choose your language</h1></div>
     <div class="tiles" id="obTiles" role="radiogroup" aria-label="Language"></div>
-    <div class="ob-section"><span class="ob-label" id="obClassLabel">Your class</span><div class="coins" id="obClass" role="radiogroup" aria-label="Class"></div></div>
-    <div class="ob-section ob-mode-section"><h2 class="ob-label" id="obModeLabel">How should Christina teach?</h2><div id="obModes" class="mode-grid" role="radiogroup" aria-labelledby="obModeLabel"></div></div>
+    <div class="ob-section"><span class="ob-label"><em class="ob-step-num">02</em><span id="obClassLabel">Your class</span></span><div class="coins" id="obClass" role="radiogroup" aria-label="Class"></div></div>
+    <div class="ob-section ob-mode-section"><h2 class="ob-label"><em class="ob-step-num">03</em><span id="obModeLabel">How should Christina teach?</span></h2><div id="obModes" class="mode-grid" role="radiogroup" aria-labelledby="obModeLabel"></div></div>
     <div id="obVoice" hidden><button data-v="female" type="button"></button><button data-v="male" type="button"></button></div>
     <button class="btn primary ob-start" id="obStart" type="button" data-magnetic><span id="obStartLabel">Start learning</span><svg class="ic"><use href="#i-arrow"/></svg></button>
   </section>

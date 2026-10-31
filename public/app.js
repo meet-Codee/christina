@@ -168,16 +168,18 @@ const mic = new Mic(() => voice.context());
 const langScope = () => [$('stage'), $('panel'), $('onboard')];
 function applyLanguage({ animateIt = false } = {}) {
   const l = L();
+  const copy = lessonCopy(l.code);
   for (const el of langScope()) el.lang = l.tag;
-  $('langName').textContent = `${l.native} · ${S.prefs.grade} · ${lessonCopy(l.code).modes[MIXES.findIndex(m => m.id === S.prefs.mix)]}`;
+  $('langName').textContent = `${l.native} · Class ${S.prefs.grade} · ${copy.modes[MIXES.findIndex((m) => m.id === S.prefs.mix)]}`;
   $('setLangName').textContent = `${l.native} · ${l.name}`;
   $('title').textContent = l.ui.title;
-  $('sub').textContent = lessonCopy(l.code).intro;
+  $('sub').textContent = copy.intro;
   if (animateIt) swapText($('greet'), l.ui.greet, l.tag); else if (!S.introRunning) $('greet').textContent = l.ui.greet;
   $('ask').dataset.base = l.ui.ask;
   $('ask').placeholder = l.ui.ask;
   $('ask').lang = l.tag;
   $('hintLabel').textContent = l.ui.hint;
+  if ($('basicsLabel')) $('basicsLabel').textContent = copy.basics;
   $('showLabel').textContent = l.ui.show;
   $('padLabel').textContent = l.ui.pad;
   $('teachChipLabel').textContent = l.ui.teach;
@@ -332,7 +334,13 @@ function showOnboarding() {
   clearTimeout(S.greetTimer);
   ob.hidden = false;
   $('app').setAttribute('inert', '');
-  const cols = buildTiles($('obTiles'), (code) => { S.prefs.lang = code; savePrefs(); applyLanguage(); localizeOnboarding(); voice.say(L().ui.greet, { lang: code }); });
+  const cols = buildTiles($('obTiles'), (code) => {
+    S.prefs.lang = code;
+    savePrefs();
+    applyLanguage({ animateIt: true });
+    localizeOnboarding({ animateGreet: true });
+    voice.say(L().ui.greet, { lang: code });
+  });
   buildCoins($('obClass'));
   segSetup($('obVoice'), 'v', S.prefs.voice, (v) => { S.prefs.voice = v; savePrefs(); });
   localizeOnboarding();
@@ -345,12 +353,13 @@ function showOnboarding() {
   setTimeout(() => $('obTiles').querySelector('[aria-checked="true"]')?.focus({ preventScroll: true }), 400);
 }
 
-function localizeOnboarding() {
+function localizeOnboarding({ animateGreet = false } = {}) {
   const l = L();
   $('obTitle').textContent = `${l.ui.chooseLang}${l.code === 'en-IN' ? '' : ' · Choose your language'}`;
   $('obClassLabel').textContent = l.ui.yourClass;
   $('obStartLabel').textContent = l.ui.start;
-  $('obGreet').textContent = l.ui.greet;
+  if (animateGreet && !reduced()) swapText($('obGreet'), l.ui.greet, l.tag);
+  else $('obGreet').textContent = l.ui.greet;
   $('obModeLabel').textContent = lessonCopy(l.code).mode;
   renderModeCards();
 }
@@ -362,7 +371,7 @@ function renderModeCards() {
   MIXES.forEach((m, i) => {
     const card = document.createElement('div'); card.className = 'mode-card glass-2';
     const sample = m.id === 'english' ? 'An equation is like a balanced scale.' : m.id === 'bilingual' ? `An equation is like a balanced scale.\n${copy.sample}` : m.id === 'mixed' ? `${copy.sample} (equation)` : copy.sample;
-    card.innerHTML = `<button type="button" class="mode-pick" role="radio" aria-checked="${S.prefs.mix === m.id}" data-mode="${m.id}"><span class="mode-number">0${i+1}</span><strong>${esc(copy.modes[i])}</strong><span class="mode-sample" lang="${m.id === 'english' ? 'en' : L().tag}">${esc(sample)}</span></button><button type="button" class="mode-preview" aria-label="${esc(ui('listen') + ': ' + copy.modes[i])}">▶ ${esc(ui('listen'))}</button>`;
+    card.innerHTML = `<button type="button" class="mode-pick" role="radio" aria-checked="${S.prefs.mix === m.id}" data-mode="${m.id}"><span class="mode-number">0${i + 1} · ${esc(m.label)}</span><strong>${esc(copy.modes[i])}</strong><span class="mode-sample" lang="${m.id === 'english' ? 'en' : L().tag}">${esc(sample)}</span></button><button type="button" class="mode-preview" aria-label="${esc(`${ui('listen')}: ${copy.modes[i]}`)}">▶ ${esc(ui('listen'))}</button>`;
     card.querySelector('.mode-pick').onclick = () => { S.prefs.mix = m.id; savePrefs(); renderMix(); applyLanguage(); renderModeCards(); box.querySelector(`[data-mode="${m.id}"]`).focus(); };
     card.querySelector('.mode-preview').onclick = () => voice.say(m.id === 'mixed' ? `${copy.sample} Equation.` : copy.sample, { lang: S.prefs.lang });
     box.appendChild(card);
@@ -393,8 +402,13 @@ async function finishOnboarding() {
 // ───────────────────────── Lesson ─────────────────────────
 const log = $('log');
 const explain = new ExplainBoard($('explainBoard'), {
-  ui, stop: () => voice.stop(), answer: text => routeInput(text), type: () => $('ask').focus(),
-  mic: () => $('micBtn').click(), pad: () => $('padBtn').click(),
+  ui,
+  stop: () => voice.stop(),
+  answer: (text) => routeInput(text),
+  type: () => $('ask').focus(),
+  mic: () => $('micBtn').click(),
+  pad: () => $('padBtn').click(),
+  basics: () => requestBasics(),
 });
 
 function newLesson(problem, extra = {}) {
@@ -722,6 +736,15 @@ export function requestHint() {
   lesson.hintsUsed++;
   const next = S.prefs.encourage ? lesson.hint : Math.min(4, lesson.hint + 1); // encouragement: one rung gentler than normal
   askTutor({ kind: 'hint', hintLevel: next });
+}
+
+export function requestBasics() {
+  const lesson = S.lesson;
+  if (!lesson || S.busy) return;
+  askTutor({
+    kind: 'basics',
+    message: 'Teach me the basics and concept from scratch with a visual analogy, without asking questions.',
+  });
 }
 
 // ───────────────────────── Hint ladder ─────────────────────────
@@ -1584,6 +1607,7 @@ $('pcThumb').addEventListener('click', () => {
   animate(lb.querySelector('img'), [{ transform: 'scale(.6) rotateY(-25deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: DUR.l, easing: EASE.spring }, 'enter');
 });
 $('hintBtn').addEventListener('click', requestHint);
+$('basicsBtn')?.addEventListener('click', requestBasics);
 $('showBtn').addEventListener('click', showMe);
 $('padBtn').addEventListener('click', (e) => openPad(ctx, e.currentTarget));
 $('teachChip').addEventListener('click', startTeach);
