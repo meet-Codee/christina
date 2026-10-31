@@ -81,7 +81,11 @@ export class Voice {
     return `/__voice/${provider}/${lang}/${p.voice}/${this.pace()}/${hash(sentence)}.wav`;
   }
 
-  pace() { const p = this.prefs(); return Math.round((p.pace || 1) * (p.encourage ? 0.9 : 1) * 100) / 100; }
+  pace() {
+    const p = this.prefs();
+    const gradeMul = (p.grade && p.grade <= 8 && (!p.pace || p.pace === 1)) ? 0.93 : 1;
+    return Math.round((p.pace || 1) * gradeMul * (p.encourage ? 0.9 : 1) * 100) / 100;
+  }
 
   async fromCache(sentence, lang) {
     try {
@@ -105,7 +109,15 @@ export class Voice {
   synth(ss, lang) {
     const out = ss.map(() => null);
     const misses = [];
-    const looked = ss.map((s, i) => this.fromCache(s, lang).then((ab) => { if (ab) return ab; misses.push(i); return null; }));
+    const tSynth0 = performance.now();
+    const sentStats = ss.map((s, i) => ({ index: i, text: s, ms: 0, by: 'cache', cached: true }));
+    window.__lastVoiceTimings = sentStats;
+    const looked = ss.map((s, i) => this.fromCache(s, lang).then((ab) => {
+      if (ab) { sentStats[i].ms = Math.round(performance.now() - tSynth0); return ab; }
+      sentStats[i].cached = false;
+      misses.push(i);
+      return null;
+    }));
     const settle = Promise.all(looked).then(async (cached) => {
       misses.sort((a, b) => a - b);
       const groups = [];
@@ -114,10 +126,15 @@ export class Voice {
       const fetched = new Map();
       const fetchGroup = async (idxs, attempt = 0) => {
         const p = this.prefs();
+        const tG0 = performance.now();
         const res = await this.api('speak', { sentences: idxs.map((i) => ss[i]), language: lang, voice: p.voice, pace: this.pace() }, { quiet: true });
+        const groupMs = Math.round(performance.now() - tG0);
         const retry = [];
         res.audios.forEach((a, k) => {
           const i = idxs[k];
+          sentStats[i].ms = a.ms || groupMs;
+          sentStats[i].roundTripMs = groupMs;
+          sentStats[i].by = a.by || 'unknown';
           if (a.audio) { const bytes = b64ToBytes(a.audio); fetched.set(i, bytes.buffer); this.toCache(ss[i], lang, bytes); } else if (a.deferred && attempt < 2) retry.push(i);
           else fetched.set(i, null);
         });
@@ -186,12 +203,12 @@ export class Voice {
         const src = ctx.createBufferSource();
         src.buffer = buf;
         src.connect(this.gain);
-        const at = Math.max(ctx.currentTime + 0.03, next);
+        const at = Math.max(ctx.currentTime + 0.02, next);
         src.start(at);
         if (!started) { started = true; opts.onStart?.(); }
         this.sources.push(src);
         timeline.push({ i, start: at, dur: buf.duration });
-        next = at + buf.duration + 0.07; // a breath between sentences, well under the 250 ms limit
+        next = at + buf.duration + 0.04; // tight natural pause (< 50 ms added to WAV tail), never > 300 ms
       }
       // Wait for the last one to finish.
       await new Promise((resolve) => {

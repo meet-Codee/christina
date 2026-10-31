@@ -558,6 +558,13 @@ export function addTutor(r, { speak = true, history = true, extra, kind = 'reply
   ], { duration: DUR.l, easing: EASE.out, heavy: true }, 'enter');
   const textEl = el.querySelector('.msg-text');
   stream(textEl, rich(r.screen));
+  if (window.__curTurn && !window.__curTurn.tText) {
+    window.__curTurn.tText = performance.now();
+    window.__curTurn.t1 = Math.round(window.__curTurn.tText - window.__curTurn.t0);
+    window.__curTurn.by = r.by || 'unknown';
+    window.__curTurn.screen = r.screen;
+    window.__curTurn.speak = r.speak;
+  }
   if (r.mix === 'english' || r.mix === 'bilingual') {
     const sub = document.createElement('div'); sub.className = 'spoken-subtitle'; sub.lang = r.language;
     sub.innerHTML = rich(r.speak || ''); el.appendChild(sub);
@@ -631,6 +638,17 @@ function speakMessage(el, r, btn) {
   btn?.classList.add('playing');
   voice.say(r.speak, {
     lang: r.language || S.prefs.lang,
+    onStart: () => {
+      if (window.__curTurn && !window.__curTurn.tAudio) {
+        window.__curTurn.tAudio = performance.now();
+        window.__curTurn.t2 = Math.round(window.__curTurn.tAudio - (window.__curTurn.tText || window.__curTurn.t0));
+        window.__curTurn.t3 = Math.round(window.__curTurn.tAudio - window.__curTurn.t0);
+        window.__curTurn.sentences = window.__lastVoiceTimings || [];
+        window.__timings = window.__timings || [];
+        window.__timings.push({ ...window.__curTurn });
+        if (localStorage.getItem('christina_debug')) console.table([window.__curTurn]);
+      }
+    },
     onWord: (i) => {
       explain.word(i, r);
       if (S.prefs.muted) return;
@@ -673,6 +691,7 @@ export async function askTutor({ message = '', kind = 'answer', hintLevel } = {}
   S.ctrl?.abort();
   const ctrl = new AbortController();
   S.ctrl = ctrl;
+  window.__curTurn = { t0: performance.now(), lang: S.prefs.lang, problem: lesson.problem, kind, message };
   const history = lesson.history.slice();
   if (message) { addStudent(message); lesson.history.push({ role: 'user', content: message }); }
   if (kind === 'hint') lesson.history.push({ role: 'user', content: '[I asked for another hint]' });
