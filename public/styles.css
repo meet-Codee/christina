@@ -852,3 +852,6 @@ input[type='range'] { width: 100%; accent-color: var(--cyan); }
 [data-tier=lite] .visual .draw { stroke-dashoffset: 0; animation: none; }
 @media(prefers-reduced-motion:reduce) { .visual .lbl { opacity: 1; animation: none; } .visual .draw { stroke-dashoffset: 0; animation: none; } }
 @media(max-width:820px) { .explain-head { align-items: start; } .explain-head .replay span { display: none; } .lesson-eyebrow { font-size: .55rem; } .stage-visual { padding: .3rem; } .transcript .log { max-height: none; } }
+
+.onboard > * { flex-shrink: 0; }
+.tiles.has-choice .tile-lang:not([aria-checked='true']) { opacity: .85; }
