@@ -2,13 +2,13 @@
 import { esc } from './fx.js';
 
 const C = {
-  cyan: '#3be8ff',
-  violet: '#8b6cff',
-  magenta: '#ff4fd8',
-  saffron: '#ffb547',
-  mint: '#3dffb5',
-  grid: 'rgba(255,255,255,.10)',
-  axis: 'rgba(255,255,255,.62)',
+  cyan: '#4CC9F0',
+  violet: '#7B2FF7',
+  magenta: '#FF2E93',
+  saffron: '#FFC93C',
+  mint: '#2EE59D',
+  grid: 'rgba(255,201,60,.16)',
+  axis: 'rgba(255,250,245,.75)',
 };
 const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
 const fmtN = (v) => (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : v.toFixed(1));
@@ -16,23 +16,26 @@ const drawAttr = (delay) => `pathLength="100" class="draw" style="--len:100;--d:
 
 const DEFS = `<defs>
   <linearGradient id="vg-cyan" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#3be8ff" stop-opacity="0.38"/>
-    <stop offset="100%" stop-color="#8b6cff" stop-opacity="0.16"/>
+    <stop offset="0%" stop-color="#00B4D8" stop-opacity="0.58"/>
+    <stop offset="55%" stop-color="#4CC9F0" stop-opacity="0.45"/>
+    <stop offset="100%" stop-color="#7B2FF7" stop-opacity="0.38"/>
   </linearGradient>
   <linearGradient id="vg-gold" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#ffd27d" stop-opacity="0.42"/>
-    <stop offset="100%" stop-color="#ff8c3b" stop-opacity="0.16"/>
+    <stop offset="0%" stop-color="#FF2E93" stop-opacity="0.52"/>
+    <stop offset="52%" stop-color="#FF9933" stop-opacity="0.52"/>
+    <stop offset="100%" stop-color="#FFC93C" stop-opacity="0.44"/>
   </linearGradient>
-  <linearGradient id="vg-mint" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="#3dffb5" stop-opacity="0.35"/>
-    <stop offset="100%" stop-color="#3be8ff" stop-opacity="0.10"/>
+  <linearGradient id="vg-mint" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#2EE59D" stop-opacity="0.55"/>
+    <stop offset="100%" stop-color="#00B4D8" stop-opacity="0.35"/>
   </linearGradient>
   <radialGradient id="vg-glow" cx="50%" cy="50%" r="50%">
-    <stop offset="0%" stop-color="#ffb547" stop-opacity="0.55"/>
-    <stop offset="100%" stop-color="#ffb547" stop-opacity="0"/>
+    <stop offset="0%" stop-color="#FFC93C" stop-opacity="0.72"/>
+    <stop offset="60%" stop-color="#FF2E93" stop-opacity="0.32"/>
+    <stop offset="100%" stop-color="#FF9933" stop-opacity="0"/>
   </radialGradient>
   <pattern id="vg-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-    <circle cx="12" cy="12" r="1" fill="rgba(255,255,255,.11)"/>
+    <circle cx="12" cy="12" r="1.3" fill="rgba(255,201,60,.22)"/>
   </pattern>
 </defs>`;
 
