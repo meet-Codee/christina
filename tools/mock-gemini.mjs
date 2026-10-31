@@ -39,11 +39,11 @@ const T = {
 };
 
 function langFrom(system) {
-  const m = /Reply only in (\w+)/.exec(system || '');
+  const m = /(?:Reply only in |speak always uses )(\w+)/.exec(system || '');
   return m && T[m[1]] ? m[1] : 'English';
 }
 
-function tutorReply(system, lastUser) {
+function legacyTutorReply(system, lastUser) {
   const L = T[langFrom(system)];
   const rung = Number(/\[rung\] (\d)/.exec(lastUser)?.[1] || 1);
   const said = /\[student\] ([\s\S]*)/.exec(lastUser)?.[1] || '';
@@ -54,6 +54,26 @@ function tutorReply(system, lastUser) {
   if (/15|ಹದಿನೈದು|पंद्रह|பதினைந்து|fifteen/i.test(said)) return { ...base, ...L.step, mood: 'confident' };
   if (/give up|don.?t know|ಗೊತ್ತಿಲ್ಲ|नहीं पता/i.test(said)) return { ...base, ...L.hint, mood: 'frustrated', screen: 'You are doing fine, mistakes help us learn. ' + L.hint.screen, speak: 'You are doing fine, mistakes help us learn. ' + L.hint.speak };
   return { ...base, ...L.wrong, mood: 'confused' };
+}
+
+function tutorReply(system, lastUser) {
+  const language = langFrom(system);
+  const r = legacyTutorReply(system, lastUser);
+  const definitions = {
+    Kannada: ['ಸಮೀಕರಣವು ಎರಡು ಸಮಾನ ಮೌಲ್ಯಗಳನ್ನು ತೋರಿಸುತ್ತದೆ. ತಕ್ಕಡಿಯ ಎರಡೂ ಬದಿಗಳು ಸಮವಾಗಿರಬೇಕು.', 'ಒಂದು ಬದಿಯಿಂದ ಏಳು ತೆಗೆದರೆ ಇನ್ನೊಂದು ಬದಿಯಿಂದಲೂ ಏಳು ತೆಗೆಯಬೇಕು. ಹೀಗೆ ಸಮತೋಲನ ಉಳಿಯುತ್ತದೆ.'],
+    Hindi: ['समीकरण दो बराबर मात्राएँ दिखाता है। तराजू के दोनों पलड़े बराबर रहते हैं।', 'एक तरफ से सात हटाएँ तो दूसरी तरफ से भी सात हटाएँ। इससे बराबरी बनी रहती है।'],
+    Tamil: ['சமன்பாடு இரண்டு சமமான அளவுகளைக் காட்டுகிறது. தராசின் இரு பக்கமும் சமமாக இருக்க வேண்டும்.', 'ஒரு பக்கத்தில் ஏழைக் கழித்தால் மறுபக்கத்திலும் ஏழைக் கழிக்க வேண்டும். சமநிலை மாறாது.'],
+    English: ['An equation says two quantities are equal. Think of a balanced scale: both sides have the same value.', 'Taking seven away from each side keeps the scale balanced. The same change on both sides preserves equality.'],
+  };
+  const english = /DISPLAY: screen, beat screen/.test(system);
+  const both = /DISPLAY: each short English/.test(system);
+  const start = /The student has just shared/.test(lastUser);
+  const lines = definitions[language];
+  const render = (local, en) => english ? en : both ? `${en}\n${local}` : local;
+  const steps = start ? lines : [r.solved ? lines[0] : r.screen];
+  const beats = steps.map((line,i) => ({ screen: render(line, definitions.English[i] || definitions.English[0]), speak: start || r.solved ? line : r.speak, visual: {type: r.solved ? 'none' : 'balance', left: '3x + 7', right: '22', operation: i === 1 ? '−7 | −7' : '=', caption: ''} }));
+  const noQuestions = /basics|no questions|do not ask/i.test(system + lastUser);
+  return { ...r, beats, screen: beats.map(b=>b.screen).join('\n'), speak: beats.map(b=>b.speak).join(' '), question: noQuestions || r.solved ? '' : render('?', 'Which operation keeps the balance?'), choices: noQuestions || r.solved ? [] : ['−7 | −7', '+7 | +7'] };
 }
 
 function pcm(seconds) {
