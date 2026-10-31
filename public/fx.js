@@ -155,37 +155,39 @@ function add(list) {
   if (!raf) raf = requestAnimationFrame(loop);
 }
 
-const PALETTE = ['#3be8ff', '#8b6cff', '#ff4fd8', '#ffb547', '#3dffb5', '#ffffff'];
+const PALETTE = ['#FFC93C', '#FF2E93', '#00B4D8', '#2EE59D', '#FF9933', '#7B2FF7', '#4CC9F0'];
 
 export function confetti({ x = innerWidth / 2, y = innerHeight * 0.35, count, colors = PALETTE } = {}) {
-  const n = count ?? (tier() === 'full' ? 150 : tier() === 'medium' ? 70 : 30);
+  const n = count ?? (tier() === 'full' ? 160 : tier() === 'medium' ? 75 : 32);
   const now = performance.now();
   add(Array.from({ length: n }, () => {
     const a = Math.random() * Math.PI * 2;
-    const v = 4 + Math.random() * 9;
+    const v = 4 + Math.random() * 9.5;
     return {
       kind: 'paper', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 6, g: 0.22, drag: 0.985,
-      w: 6 + Math.random() * 7, h: 9 + Math.random() * 9, rx: Math.random() * 6, vrx: 0.08 + Math.random() * 0.25,
+      w: 6 + Math.random() * 7.5, h: 9 + Math.random() * 9.5, rx: Math.random() * 6, vrx: 0.08 + Math.random() * 0.25,
       rz: Math.random() * 6, vrz: (Math.random() - 0.5) * 0.25, color: colors[(Math.random() * colors.length) | 0],
       born: now, life: 2600 + Math.random() * 1400,
     };
   }));
 }
 
-export function sparkle(x, y, { count = 14, color = '#3dffb5', spread = 4 } = {}) {
+export function sparkle(x, y, { count = 16, color, spread = 4.4 } = {}) {
   const now = performance.now();
-  add(Array.from({ length: tier() === 'lite' ? Math.ceil(count / 3) : count }, () => {
+  const cols = color ? [color, '#FFC93C', '#FF2E93', '#2EE59D'] : ['#FFC93C', '#FF2E93', '#00B4D8', '#2EE59D'];
+  add(Array.from({ length: tier() === 'lite' ? Math.ceil(count / 3) : count }, (_, i) => {
     const a = Math.random() * Math.PI * 2;
     const v = 0.6 + Math.random() * spread;
-    return { kind: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.6, g: 0.03, drag: 0.95, size: 4 + Math.random() * 6, rx: 0, vrx: 0, rz: Math.random() * 3, vrz: (Math.random() - 0.5) * 0.2, color, born: now, life: 700 + Math.random() * 500 };
+    return { kind: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.6, g: 0.03, drag: 0.95, size: 4.5 + Math.random() * 6.5, rx: 0, vrx: 0, rz: Math.random() * 3, vrz: (Math.random() - 0.5) * 0.2, color: cols[i % cols.length], born: now, life: 720 + Math.random() * 520 };
   }));
 }
 
-export function dust(x, y, { count = 18, color = 'rgba(61,255,181,.9)' } = {}) {
+export function dust(x, y, { count = 18, color = 'rgba(255,201,60,.92)' } = {}) {
   const now = performance.now();
-  add(Array.from({ length: tier() === 'lite' ? 6 : count }, () => ({
+  const cols = [color, 'rgba(255,46,147,.88)', 'rgba(0,180,216,.88)', 'rgba(46,229,157,.9)'];
+  add(Array.from({ length: tier() === 'lite' ? 6 : count }, (_, i) => ({
     kind: 'dot', x: x + (Math.random() - 0.5) * 20, y, vx: (Math.random() - 0.5) * 1.6, vy: -0.4 - Math.random() * 1.6, g: -0.005, drag: 0.97,
-    size: 0.8 + Math.random() * 1.8, rx: 0, vrx: 0, rz: 0, vrz: 0, color, born: now, life: 800 + Math.random() * 700,
+    size: 0.9 + Math.random() * 1.9, rx: 0, vrx: 0, rz: 0, vrz: 0, color: cols[i % cols.length], born: now, life: 800 + Math.random() * 700,
   })));
 }
 

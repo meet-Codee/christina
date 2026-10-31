@@ -47,14 +47,14 @@ void main(){
 
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
 export const MOODS = {
-  idle: { a: '#3be8ff', b: '#8b6cff', c: '#ff4fd8', swirl: 1, halo: '#8b6cff' },
-  speaking: { a: '#3be8ff', b: '#7d8bff', c: '#e8fbff', swirl: 1.5, halo: '#3be8ff' },
-  listening: { a: '#ffb547', b: '#ff4fd8', c: '#ff7a45', swirl: 1.7, halo: '#ffb547' },
-  thinking: { a: '#8b6cff', b: '#3be8ff', c: '#ff4fd8', swirl: 3.4, halo: '#8b6cff' },
-  teach: { a: '#ffb547', b: '#3dffb5', c: '#3be8ff', swirl: 1.2, halo: '#ffb547' },
-  celebrate: { a: '#3dffb5', b: '#ffe27a', c: '#3be8ff', swirl: 2.2, halo: '#3dffb5' },
-  encourage: { a: '#ff9ec7', b: '#c9a7ff', c: '#ffd1e3', swirl: 0.55, halo: '#ff9ec7' },
-  offline: { a: '#9a98b0', b: '#5d5b74', c: '#c8c6da', swirl: 0.3, halo: '#6d6b84' },
+  idle: { a: '#00B4D8', b: '#7B2FF7', c: '#FF2E93', swirl: 1.15, halo: '#FFC93C' },
+  speaking: { a: '#00B4D8', b: '#4CC9F0', c: '#7B2FF7', swirl: 1.6, halo: '#4CC9F0' },
+  listening: { a: '#FF9933', b: '#FF2E93', c: '#FFC93C', swirl: 1.8, halo: '#FF9933' },
+  thinking: { a: '#7B2FF7', b: '#FF2E93', c: '#4CC9F0', swirl: 3.4, halo: '#c084fc' },
+  teach: { a: '#FFC93C', b: '#2EE59D', c: '#00B4D8', swirl: 1.3, halo: '#FFC93C' },
+  celebrate: { a: '#FFC93C', b: '#FF2E93', c: '#2EE59D', swirl: 2.5, halo: '#FFC93C' },
+  encourage: { a: '#FF2E93', b: '#FFC93C', c: '#7B2FF7', swirl: 0.75, halo: '#FF9933' },
+  offline: { a: '#9a98b0', b: '#5d5b74', c: '#c8c6da', swirl: 0.3, halo: '#8b88a8' },
 };
 
 export class Orb {
@@ -279,34 +279,38 @@ export class Orb {
     const petals = 8;
     const rot = this.reduced ? 0 : t * (this.state === 'thinking' ? 0.22 : 0.035);
     const [r, g, b] = this.cur.halo.map((v) => Math.round(v * 255));
+    const [ra, ga, ba] = this.cur.a.map((v) => Math.round(v * 255));
+    const [rc, gc, bc] = this.cur.c.map((v) => Math.round(v * 255));
     const intro = this.introT < 1 ? Math.max(0, this.introT) : 1;
     const e = this._energy;
 
-    // Pulli dots
+    // Pulli dots (alternating halo gold and festival accents)
     for (let i = 0; i < petals * 2; i++) {
       const ang = rot + (i / (petals * 2)) * Math.PI * 2 + Math.PI / (petals * 2);
-      const rad = R0 + (i % 2 ? -1 : 1) * A * 0.0;
-      const tw = this.reduced ? 0.7 : 0.55 + 0.45 * Math.sin(t * 2 + i * 1.7);
-      c.fillStyle = `rgba(${r},${g},${b},${(0.25 + 0.5 * tw + 0.3 * e) * intro})`;
+      const rad = R0;
+      const tw = this.reduced ? 0.78 : 0.62 + 0.38 * Math.sin(t * 2.2 + i * 1.7);
+      const col = i % 3 === 0 ? `${r},${g},${b}` : i % 3 === 1 ? `${rc},${gc},${bc}` : `${ra},${ga},${ba}`;
+      c.fillStyle = `rgba(${col},${(0.42 + 0.45 * tw + 0.3 * e) * intro})`;
       c.beginPath();
-      c.arc(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, (1.3 + e * 1.2) * this.hdpr, 0, Math.PI * 2);
+      c.arc(cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad, (1.6 + e * 1.3) * this.hdpr, 0, Math.PI * 2);
       c.fill();
     }
-    // Outer ring of dots
+    // Outer ring of marigold diya dots
     for (let i = 0; i < petals; i++) {
       const ang = rot * 0.5 + (i / petals) * Math.PI * 2;
-      c.fillStyle = `rgba(${r},${g},${b},${0.18 * intro})`;
+      c.fillStyle = `rgba(255,201,60,${0.38 * intro})`;
       c.beginPath();
-      c.arc(cx + Math.cos(ang) * R0 * 1.22, cy + Math.sin(ang) * R0 * 1.22, 1.1 * this.hdpr, 0, Math.PI * 2);
+      c.arc(cx + Math.cos(ang) * R0 * 1.22, cy + Math.sin(ang) * R0 * 1.22, 1.5 * this.hdpr, 0, Math.PI * 2);
       c.fill();
     }
     // Two interlaced loops, drawn progressively after a state change
     const p = this.kolamProgress;
     const steps = 360;
-    c.lineWidth = 1.2 * this.hdpr;
+    c.lineWidth = 1.45 * this.hdpr;
     c.lineCap = 'round';
     for (let k = 0; k < 2; k++) {
-      c.strokeStyle = `rgba(${r},${g},${b},${(0.35 + 0.35 * e) * intro})`;
+      const lcol = k === 0 ? `${r},${g},${b}` : `${rc},${gc},${bc}`;
+      c.strokeStyle = `rgba(${lcol},${(0.48 + 0.36 * e) * intro})`;
       c.beginPath();
       const n = Math.max(2, Math.floor(steps * p));
       for (let i = 0; i <= n; i++) {
@@ -327,8 +331,8 @@ export class Orb {
         const d = q.d * (1 - ease) + base * 0.3 * ease;
         const x = cx + Math.cos(q.a + ease * 0.8) * d;
         const y = cy + Math.sin(q.a + ease * 0.8) * d;
-        const col = q.c < 0.5 ? '59,232,255' : q.c < 0.8 ? '139,108,255' : '255,79,216';
-        c.fillStyle = `rgba(${col},${(tt < 1 ? 0.9 : 0) * (0.4 + 0.6 * tt)})`;
+        const col = q.c < 0.35 ? '255,201,60' : q.c < 0.7 ? '255,46,147' : '0,180,216';
+        c.fillStyle = `rgba(${col},${(tt < 1 ? 0.92 : 0) * (0.45 + 0.55 * tt)})`;
         c.beginPath();
         c.arc(x, y, q.s * this.hdpr, 0, Math.PI * 2);
         c.fill();
