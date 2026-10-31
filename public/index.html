@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en" data-tier="full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05050c">
+  <meta name="description" content="Christina: a voice tutor for regional-medium students. Speak, snap or type your doubt and she guides you to the answer in your own language, one hint at a time.">
+  <title>Christina · your voice tutor</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Sans+Gurmukhi:wght@400;600;700&family=Noto+Sans+Oriya:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="sr-only" href="#ask">Skip to the question box</a>
+
+  <!-- z0: aurora, dot grid, grain -->
+  <div class="bg" aria-hidden="true">
+    <canvas id="aurora"></canvas>
+    <div class="dots" id="dots"></div>
+    <div class="dots-hover" id="dotsHover"></div>
+    <div class="grain"></div>
+  </div>
+  <div class="cursor-glow" aria-hidden="true"></div>
+
+  <div class="app" id="app">
+    <!-- z1: nav -->
+    <header class="nav glass-1 z1" id="nav">
+      <a class="brand" href="#" id="brand" aria-label="Christina, start again"><span class="brand-orb" aria-hidden="true"></span><span class="brand-name">Christina</span></a>
+      <button class="lang-pill press" id="langPill" type="button" aria-label="Change language">
+        <span class="lp-inner"><span class="lp-front" id="langName">English</span><span class="lp-back" aria-hidden="true">Change</span></span>
+      </button>
+      <div class="mix" id="mix" role="radiogroup" aria-label="Language mix">
+        <span class="mix-ind" aria-hidden="true"></span>
+        <button type="button" role="radio" data-mix="pure" title="Textbook regional terms">Pure</button>
+        <button type="button" role="radio" data-mix="mixed" title="How students actually talk">Mixed</button>
+        <button type="button" role="radio" data-mix="bilingual" title="Every term in both languages">+ English</button>
+      </div>
+      <span class="grow"></span>
+      <button class="icon-btn" id="skyBtn" type="button" aria-label="My Sky: everything you solved" data-magnetic><svg class="ic"><use href="#i-star"/></svg><span class="badge" id="skyBadge"></span></button>
+      <button class="icon-btn panel-toggle" id="panelBtn" type="button" aria-label="Open your progress" aria-expanded="false" data-magnetic><svg class="ic"><use href="#i-ladder"/></svg><span class="badge" id="rungBadge"></span></button>
+      <button class="icon-btn" id="aboutBtn" type="button" aria-label="How Christina works" data-magnetic><svg class="ic"><use href="#i-info"/></svg></button>
+      <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" aria-expanded="false" data-magnetic><svg class="ic"><use href="#i-gear"/></svg></button>
+    </header>
+
+    <div class="scrim" id="scrim"></div>
+    <main class="main">
+      <section class="stage" id="stage" aria-label="Lesson">
+        <!-- Hero -->
+        <div class="hero view" id="hero">
+          <div class="orb-home" id="orbHome"><div class="orb" id="orb" role="button" tabindex="-1" aria-label="Christina. Click to hear her last reply again."></div></div>
+          <p class="greet" id="greet" aria-hidden="true"></p>
+          <h1 class="title" id="title">Speak, snap or type your doubt</h1>
+          <p class="sub" id="sub">I'll guide you to the answer, one hint at a time.</p>
+          <div class="examples" id="examples"></div>
+          <div class="hero-recent" id="heroRecent"></div>
+        </div>
+
+        <!-- Lesson -->
+        <div class="lesson view" id="lesson" hidden>
+          <div class="lesson-head">
+            <div class="orb-slot" id="orbSlot"></div>
+            <article class="problem-card glass-2 z2" id="problemCard">
+              <button class="pc-thumb" id="pcThumb" type="button" hidden aria-label="Open the photo"><img id="pcImg" alt="Your homework photo"></button>
+              <div class="pc-body">
+                <div class="pc-label" id="pcLabel">Problem</div>
+                <div class="pc-text" id="problemText"></div>
+              </div>
+              <div class="pc-actions">
+                <button class="icon-btn" id="muteBtn" type="button" aria-label="Turn Christina's voice off" aria-pressed="false" data-magnetic><svg class="ic"><use href="#i-volume"/></svg></button>
+                <button class="icon-btn" id="newBtn" type="button" aria-label="New problem (N)" data-magnetic><svg class="ic"><use href="#i-plus"/></svg></button>
+              </div>
+            </article>
+          </div>
+          <div class="log" id="log" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation with Christina"></div>
+          <div class="chips" id="chips" role="toolbar" aria-label="Help">
+            <button class="chip hint" id="hintBtn" type="button" data-magnetic data-ripple><svg class="ic"><use href="#i-bulb"/></svg><span id="hintLabel">Hint</span><kbd data-k="H">H</kbd></button>
+            <button class="chip show" id="showBtn" type="button" data-magnetic data-ripple><svg class="ic"><use href="#i-eye"/></svg><span id="showLabel">Show me</span></button>
+            <button class="chip pad" id="padBtn" type="button" data-magnetic data-ripple><svg class="ic"><use href="#i-pencil"/></svg><span id="padLabel">Show working</span></button>
+            <button class="chip teach" id="teachChip" type="button" data-magnetic data-ripple hidden><svg class="ic"><use href="#i-teach"/></svg><span id="teachChipLabel">Explain it back</span></button>
+          </div>
+        </div>
+
+        <div class="caption" id="caption" aria-live="polite"></div>
+
+        <form class="dock glass-2 z1" id="dock" autocomplete="off">
+          <span class="focus-border" aria-hidden="true"></span>
+          <button class="dock-btn" id="camBtn" type="button" aria-label="Snap your homework" data-magnetic><svg class="ic"><use href="#i-camera"/></svg></button>
+          <label class="sr-only" for="ask">Type your doubt</label>
+          <input id="ask" name="ask" type="text" data-noring enterkeyhint="send" placeholder="Type your doubt…" maxlength="1200">
+          <button class="dock-btn" id="callBtn" type="button" aria-label="Talk to Christina hands-free (call mode)" data-magnetic><svg class="ic"><use href="#i-phone"/></svg></button>
+          <button class="mic" id="micBtn" type="button" aria-label="Hold to talk (or hold Space)" data-magnetic>
+            <svg class="ic mic-ic"><use href="#i-mic"/></svg><svg class="ic stop-ic"><use href="#i-stop"/></svg>
+          </button>
+          <button class="dock-btn" id="sendBtn" type="submit" aria-label="Send" data-magnetic><svg class="ic"><use href="#i-send"/></svg></button>
+          <input id="photoInput" type="file" accept="image/*" capture="environment" hidden>
+        </form>
+        <div class="kbd-hints" aria-hidden="true">
+          <span><kbd data-k="Space">Space</kbd>hold to talk</span><span><kbd data-k="H">H</kbd>hint</span><span><kbd data-k="N">N</kbd>new problem</span><span><kbd data-k="Esc">Esc</kbd>stop</span>
+        </div>
+      </section>
+
+      <!-- Mission panel (a draggable bottom sheet on phones) -->
+      <aside class="panel" id="panel" aria-label="Your progress">
+        <div class="sheet-handle" id="sheetHandle" role="button" tabindex="0" aria-label="Close progress"></div>
+        <section class="card glass-1 z1">
+          <h2><svg class="ic"><use href="#i-ladder"/></svg><span id="ladderTitle">Hint ladder</span><small id="ladderSmall">1 / 4</small></h2>
+          <ol class="ladder" id="ladder"><span class="rail" aria-hidden="true"></span><span class="bead" id="bead" aria-hidden="true"></span></ol>
+        </section>
+        <section class="card glass-1 z1">
+          <h2><svg class="ic"><use href="#i-check"/></svg><span id="solutionTitle">Your solution</span></h2>
+          <ol class="board" id="board"><li class="empty" id="boardEmpty">Each step you get right is written here, in your own working.</li></ol>
+        </section>
+        <section class="card glass-1 z1 actions">
+          <button class="action teach sheen" id="teachBtn" type="button" disabled>
+            <span class="tile"><span class="tile-in"><span class="face"><svg class="ic"><use href="#i-teach"/></svg></span><span class="face back"><svg class="ic"><use href="#i-mic"/></svg></span></span></span>
+            <span id="teachLabel">Explain it back</span>
+          </button>
+          <button class="action parent sheen" id="parentBtn" type="button" disabled>
+            <span class="tile"><span class="tile-in"><span class="face"><svg class="ic"><use href="#i-wave"/></svg></span><span class="face back"><svg class="ic"><use href="#i-whatsapp"/></svg></span></span></span>
+            <span id="parentLabel">Voice note for parents</span>
+          </button>
+        </section>
+        <section class="card glass-1 z1">
+          <h2><svg class="ic"><use href="#i-book"/></svg><span id="wordsTitle">Words to know</span><small id="wordsCount"></small></h2>
+          <div class="words" id="words"><p class="empty" id="wordsEmpty">New terms appear here in both languages. Tap a card to flip it.</p></div>
+        </section>
+        <section class="card glass-1 z1 stats" aria-label="Your stats">
+          <div class="stat"><b id="stSolved">0</b><span>Solved</span></div>
+          <div class="stat"><b id="stStars">0</b><span>Stars</span></div>
+          <div class="stat"><b id="stStreak">0</b><span>Day streak</span></div>
+          <div class="stat"><b id="stPractice">0</b><span>Practice</span></div>
+        </section>
+        <section class="card glass-1 z1" id="recentCard" hidden>
+          <h2><svg class="ic"><use href="#i-clock"/></svg><span>Recent lessons</span></h2>
+          <ul class="recent-list" id="recentList"></ul>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Settings -->
+  <dialog class="dlg glass-3" id="settingsDlg" aria-labelledby="settingsTitle">
+    <div class="dlg-head"><h2 id="settingsTitle">Settings</h2><button class="icon-btn" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="dlg-body">
+      <div class="field"><span class="label">Language</span><button class="btn" id="setLang" type="button"><svg class="ic"><use href="#i-globe"/></svg><span id="setLangName">English</span></button></div>
+      <div class="field"><span class="label">Class</span><div class="coins" id="setClass" role="radiogroup" aria-label="Class"></div></div>
+      <div class="field"><span class="label">Language mix</span><div class="seg" id="setMix" role="radiogroup" aria-label="Language mix"></div><span class="hint-text">Pure uses textbook terms, Mixed talks like students do, + English gives every term in both languages.</span></div>
+      <div class="field"><span class="label">Voice</span><div class="seg" id="setVoice" role="radiogroup" aria-label="Voice"><button type="button" role="radio" data-v="female">Female</button><button type="button" role="radio" data-v="male">Male</button></div></div>
+      <div class="field"><label for="setPace">Speaking speed <span id="paceVal">1.0×</span></label><input id="setPace" type="range" min="0.75" max="1.25" step="0.05" value="1"></div>
+      <div class="row"><div class="txt"><b>Christina speaks out loud</b><span>Turn off for a quiet classroom. Captions stay.</span></div><button class="toggle" id="setSpeak" type="button" role="switch" aria-label="Christina speaks out loud"><span class="knob"></span></button></div>
+      <div class="row"><div class="txt"><b>Free browser voice</b><span>Data saver: uses this device's own voice and listening. No AI voice calls.</span></div><button class="toggle" id="setFree" type="button" role="switch" aria-label="Free browser voice"><span class="knob"></span></button></div>
+      <div class="field"><span class="label">Visual effects</span><div class="seg" id="setFx" role="radiogroup" aria-label="Visual effects"><button type="button" role="radio" data-fx="auto">Auto</button><button type="button" role="radio" data-fx="full">Full</button><button type="button" role="radio" data-fx="lite">Lite</button></div><span class="hint-text" id="fxNow">Auto picks the best for this device and drops to Lite if it gets slow.</span></div>
+      <div class="field"><span class="label">Keyboard shortcuts</span>
+        <div class="shortcuts"><kbd>Space</kbd><span>Hold to talk</span><kbd>H</kbd><span>Another hint</span><kbd>N</kbd><span>New problem</span><kbd>Esc</kbd><span>Stop Christina, close panels</span></div>
+      </div>
+      <div class="row"><button class="btn small" id="replayIntro" type="button">Show the welcome again</button><button class="btn small" id="resetAll" type="button">Clear my progress</button></div>
+    </div>
+  </dialog>
+
+  <!-- How Christina works -->
+  <dialog class="dlg glass-3" id="aboutDlg" aria-labelledby="aboutTitle">
+    <div class="dlg-head"><h2 id="aboutTitle">How Christina works</h2><button class="icon-btn" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="dlg-body">
+      <div class="how-steps">
+        <div class="how-step"><b>1 · Ask</b>Speak, snap a photo or type, in any of 11 languages.</div>
+        <div class="how-step"><b>2 · Think</b>Christina reads your doubt and plans the smallest helpful step.</div>
+        <div class="how-step"><b>3 · Hint</b>Nudge, concept, a similar example, then only the next step.</div>
+        <div class="how-step"><b>4 · Own it</b>Your correct steps become your solution. Then explain it back.</div>
+      </div>
+      <div class="note"><b>She never gives the final answer.</b> She checks every attempt, names the mistake, and helps you find it yourself.</div>
+      <div class="field"><span class="label">AI services <span id="healthWhen" class="hint-text"></span></span><div class="services" id="services"></div></div>
+      <div class="row"><span class="hint-text">Status is checked live with a tiny request to each service.</span><button class="btn small" id="recheck" type="button"><svg class="ic"><use href="#i-refresh"/></svg>Check again</button></div>
+    </div>
+  </dialog>
+
+  <!-- Voice note for parents -->
+  <dialog class="dlg glass-3" id="reportDlg" aria-labelledby="reportTitle">
+    <div class="dlg-head"><h2 id="reportTitle">Voice note for parents</h2><button class="icon-btn" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="dlg-body">
+      <div class="report-text" id="reportText" aria-live="polite"></div>
+      <div class="report-actions">
+        <button class="btn primary" id="reportPlay" type="button" disabled><svg class="ic"><use href="#i-play"/></svg><span>Play</span></button>
+        <button class="btn" id="reportWa" type="button" disabled><svg class="ic"><use href="#i-whatsapp"/></svg>Send on WhatsApp</button>
+        <button class="btn" id="reportShare" type="button" disabled><svg class="ic"><use href="#i-share"/></svg>Share voice note</button>
+      </div>
+      <p class="hint-text">Made for parents who may not read: they can just listen.</p>
+    </div>
+  </dialog>
+
+  <!-- Passcode -->
+  <dialog class="dlg glass-3" id="passDlg" aria-labelledby="passTitle">
+    <form method="dialog" id="passForm">
+      <div class="dlg-head"><h2 id="passTitle">Enter the passcode</h2></div>
+      <div class="dlg-body">
+        <p class="hint-text" id="passHint">This Christina is protected so strangers can't use up its free quota. Ask the person who shared the link.</p>
+        <input class="pass-input" id="passInput" type="password" autocomplete="current-password" aria-label="Passcode" required>
+        <button class="btn primary" type="submit">Continue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Language picker -->
+  <dialog class="dlg glass-3" id="langDlg" aria-labelledby="langTitle">
+    <div class="dlg-head"><h2 id="langTitle">Choose your language</h2><button class="icon-btn" type="button" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="dlg-body"><div class="tiles" id="langTiles" role="radiogroup" aria-label="Language"></div></div>
+  </dialog>
+
+  <!-- Onboarding -->
+  <section class="onboard" id="onboard" hidden aria-label="Welcome">
+    <div class="ob-greet" id="obGreet" aria-hidden="true"></div>
+    <h1 class="ob-title" id="obTitle">Choose your language</h1>
+    <div class="tiles" id="obTiles" role="radiogroup" aria-label="Language"></div>
+    <div class="ob-section"><span class="ob-label" id="obClassLabel">Your class</span><div class="coins" id="obClass" role="radiogroup" aria-label="Class"></div></div>
+    <div class="ob-section"><span class="ob-label">Christina's voice</span><div class="seg" id="obVoice" role="radiogroup" aria-label="Voice"><button type="button" role="radio" data-v="female">Female</button><button type="button" role="radio" data-v="male">Male</button></div></div>
+    <button class="btn primary ob-start" id="obStart" type="button" data-magnetic><span id="obStartLabel">Start learning</span><svg class="ic"><use href="#i-arrow"/></svg></button>
+  </section>
+
+  <!-- Call mode -->
+  <section class="call" id="call" hidden aria-label="Call with Christina" role="dialog" aria-modal="true">
+    <div class="call-top"><span class="timer" id="callTimer">0:00</span><span class="status" id="callStatus">Connecting…</span><span class="timer"></span></div>
+    <div class="call-orb" id="callOrb"></div>
+    <div class="call-caps" aria-live="polite">
+      <div class="call-you" id="callYou"></div>
+      <div class="call-her" id="callHer"></div>
+      <div class="vad-meter" aria-hidden="true"><i id="vadMeter"></i></div>
+    </div>
+    <div>
+      <div class="call-controls">
+        <button class="call-btn" id="callMute" type="button" aria-pressed="false" aria-label="Mute my microphone"><svg class="ic"><use href="#i-mic"/></svg></button>
+        <button class="call-btn end" id="callEnd" type="button" aria-label="End call"><svg class="ic"><use href="#i-phone-off"/></svg></button>
+      </div>
+      <p class="call-hint">Just talk. Christina listens, answers and listens again. Talk over her to interrupt. Esc ends the call.</p>
+    </div>
+  </section>
+
+  <!-- Scratchpad -->
+  <section class="pad-sheet glass-3 z4" id="pad" hidden aria-label="Scratchpad" role="dialog" aria-modal="true">
+    <span class="pad-grip" id="padGrip" aria-hidden="true"></span>
+    <div class="pad-head">
+      <h2><svg class="ic"><use href="#i-pencil"/></svg><span id="padTitle">Show your working</span></h2>
+      <button class="tool" id="penA" type="button" aria-pressed="true" aria-label="Pen, white"><span class="swatch" style="background:#f6f4ff"></span></button>
+      <button class="tool" id="penB" type="button" aria-pressed="false" aria-label="Pen, saffron"><span class="swatch" style="background:#ffb547"></span></button>
+      <button class="tool" id="eraser" type="button" aria-pressed="false" aria-label="Eraser"><svg class="ic"><use href="#i-eraser"/></svg></button>
+      <button class="tool" id="undo" type="button" aria-label="Undo"><svg class="ic"><use href="#i-undo"/></svg></button>
+      <button class="tool" id="clearPad" type="button" aria-label="Clear"><svg class="ic"><use href="#i-trash"/></svg></button>
+      <button class="tool" id="closePad" type="button" aria-label="Close scratchpad"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="pad-canvas-wrap" id="padWrap"><canvas id="padCanvas" aria-label="Drawing area: write your working with your finger, pen or mouse"></canvas><div class="pad-empty" id="padEmpty">Write your next step here with your finger, pen or mouse.</div></div>
+    <div class="pad-foot"><span class="hint-text" id="padHint">Christina checks only your latest line.</span><span class="grow"></span><button class="btn primary" id="checkStep" type="button" disabled data-magnetic><svg class="ic"><use href="#i-check"/></svg><span id="checkLabel">Check my step</span></button></div>
+  </section>
+
+  <!-- My Sky -->
+  <section class="sky" id="sky" hidden aria-label="My Sky" role="dialog" aria-modal="true">
+    <canvas id="skyCanvas" aria-label="Your constellation of solved problems. Drag to turn it."></canvas>
+    <div class="sky-top">
+      <h2 id="skyTitle">My Sky</h2>
+      <div class="sky-stats"><span class="sky-stat glass-1"><b id="skyTotal">0</b>solved</span><span class="sky-stat glass-1"><b id="skyStreak">0</b>day streak</span></div>
+      <button class="icon-btn" id="skyClose" type="button" aria-label="Close My Sky"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="sky-empty" id="skyEmpty" hidden><svg class="ic" style="width:3rem;height:3rem;color:#ffd166"><use href="#i-star"/></svg><p>Your sky is waiting. Every problem you solve becomes a star here, and stars from the same day join into a constellation.</p><button class="btn primary" id="skyStart" type="button">Solve your first problem</button></div>
+    <div class="sky-legend" id="skyLegend"></div>
+    <div class="sky-actions"><button class="btn" id="skyShare" type="button"><svg class="ic"><use href="#i-share"/></svg>Share my latest</button></div>
+    <div class="sky-tip glass-3" id="skyTip" hidden></div>
+  </section>
+
+  <div class="toasts" id="toasts" aria-live="assertive"></div>
+
+  <!-- Icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+    <symbol id="i-mic-off" viewBox="0 0 24 24"><path d="M9 9v2a3 3 0 0 0 5.1 2.1M15 10V6a3 3 0 0 0-5.7-1.3M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2.5" fill="currentColor"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12 20 4l-4 16-4-7-7-1z"/><path d="m12 13 8-9"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+    <symbol id="i-phone-off" viewBox="0 0 24 24"><path d="M3 13.5c5-4.6 13-4.6 18 0l-2.3 2.6-3.4-1.6v-2.4a10 10 0 0 0-6.6 0v2.4l-3.4 1.6z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-ladder" viewBox="0 0 24 24"><path d="M7 3v18M17 3v18M7 7h10M7 12h10M7 17h10"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+    <symbol id="i-star-fill" viewBox="0 0 24 24"><path d="m12 2.5 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-teach" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></symbol>
+    <symbol id="i-whatsapp" viewBox="0 0 24 24"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-1.5-1-2-2l1-1-1-2z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></symbol>
+    <symbol id="i-volume-off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="m17 9 5 6M22 9l-5 6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7 21-4-4 10-10 7 7-7 7zM21 21H7M8.5 11.5l7 7"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-equation" viewBox="0 0 24 24"><path d="M4 8h6M7 5v6M14 8h6M4 16h6M14 14h6M14 18h6"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15z"/><path d="M5 19c3-4 6-7 10-9"/></symbol>
+    <symbol id="i-pie" viewBox="0 0 24 24"><path d="M12 3v9h9a9 9 0 1 1-9-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 5-3M22 8.5a15 15 0 0 0-11-4M5.5 12a10 10 0 0 1 4-2.4M18.5 12a10 10 0 0 0-3-2M9 15.5a5 5 0 0 1 6 0M12 19.5v.5M3 3l18 18"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  </svg>
+</body>
+</html>

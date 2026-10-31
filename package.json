@@ -1,0 +1,12 @@
+{
+  "name": "christina",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Voice AI tutor for regional-medium students. Speak, snap or type your doubt.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs --open"
+  },
+  "engines": { "node": ">=20" }
+}
