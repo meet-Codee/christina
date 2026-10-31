@@ -1,5 +1,5 @@
 // app.js: Christina's brain in the browser. State S, the api() client, the lesson flow, panels, dialogs and shortcuts.
-import { LANGS, byCode, EXAMPLES, MIXES, RUNGS, fmt } from './i18n.js';
+import { LANGS, byCode, EXAMPLES, MIXES, RUNGS, fmt, lessonCopy } from './i18n.js';
 import { esc, rich, plain, stream, countUp, confetti, sparkle, dust, centerOf } from './fx.js';
 import {
   reduced, tier, rich3d, DUR, EASE, STAGGER, animate, reveal, maskReveal, flip, pop, stagger, riseText, swapText,
@@ -167,7 +167,7 @@ const langScope = () => [$('stage'), $('panel'), $('onboard')];
 function applyLanguage({ animateIt = false } = {}) {
   const l = L();
   for (const el of langScope()) el.lang = l.tag;
-  $('langName').textContent = l.native;
+  $('langName').textContent = `${l.native} · ${S.prefs.grade} · ${lessonCopy(l.code).modes[MIXES.findIndex(m => m.id === S.prefs.mix)]}`;
   $('setLangName').textContent = `${l.native} · ${l.name}`;
   $('title').textContent = l.ui.title;
   $('sub').textContent = l.ui.sub;
@@ -326,9 +326,11 @@ function buildTiles(box, onPick) {
 
 function showOnboarding() {
   const ob = $('onboard');
+  stopAll();
+  clearTimeout(S.greetTimer);
   ob.hidden = false;
   $('app').setAttribute('inert', '');
-  const cols = buildTiles($('obTiles'), (code) => { S.prefs.lang = code; savePrefs(); applyLanguage(); localizeOnboarding(); });
+  const cols = buildTiles($('obTiles'), (code) => { S.prefs.lang = code; savePrefs(); applyLanguage(); localizeOnboarding(); voice.say(L().ui.greet, { lang: code }); });
   buildCoins($('obClass'));
   segSetup($('obVoice'), 'v', S.prefs.voice, (v) => { S.prefs.voice = v; savePrefs(); });
   localizeOnboarding();
@@ -337,16 +339,7 @@ function showOnboarding() {
   [...$('obTiles').children].forEach((t, i) => flip(t, { axis: 'x', from: 60, delay: 200 + (Math.floor(i / cols) + (i % cols)) * 55 }));
   stagger($('obClass').children, (c, d) => animate(c, [{ transform: 'translateY(-40px) rotateX(70deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: DUR.l, delay: d, easing: EASE.spring }, 'enter'), 45, 600);
   reveal($('obStart'), { delay: 900 });
-  // Greetings cycle through all 11 scripts.
-  let i = 0;
-  const cycle = () => {
-    if (ob.hidden) return;
-    const l = LANGS[i++ % LANGS.length];
-    $('obGreet').lang = l.tag;
-    riseText($('obGreet'), l.ui.greet, l.tag, { step: 55 });
-    S.greetTimer = setTimeout(cycle, 1900);
-  };
-  cycle();
+  $('obGreet').textContent = L().ui.greet;
   setTimeout(() => $('obTiles').querySelector('[aria-checked="true"]')?.focus({ preventScroll: true }), 400);
 }
 
@@ -355,9 +348,27 @@ function localizeOnboarding() {
   $('obTitle').textContent = `${l.ui.chooseLang}${l.code === 'en-IN' ? '' : ' · Choose your language'}`;
   $('obClassLabel').textContent = l.ui.yourClass;
   $('obStartLabel').textContent = l.ui.start;
+  $('obGreet').textContent = l.ui.greet;
+  $('obModeLabel').textContent = lessonCopy(l.code).mode;
+  renderModeCards();
+}
+
+function renderModeCards() {
+  const copy = lessonCopy(S.prefs.lang);
+  const box = $('obModes');
+  box.innerHTML = '';
+  MIXES.forEach((m, i) => {
+    const card = document.createElement('div'); card.className = 'mode-card glass-2';
+    const sample = m.id === 'english' ? 'An equation is like a balanced scale.' : m.id === 'bilingual' ? `An equation is like a balanced scale.\n${copy.sample}` : m.id === 'mixed' ? `${copy.sample} (equation)` : copy.sample;
+    card.innerHTML = `<button type="button" class="mode-pick" role="radio" aria-checked="${S.prefs.mix === m.id}" data-mode="${m.id}"><span class="mode-number">0${i+1}</span><strong>${esc(copy.modes[i])}</strong><span class="mode-sample" lang="${m.id === 'english' ? 'en' : L().tag}">${esc(sample)}</span></button><button type="button" class="mode-preview" aria-label="${esc(ui('listen') + ': ' + copy.modes[i])}">▶ ${esc(ui('listen'))}</button>`;
+    card.querySelector('.mode-pick').onclick = () => { S.prefs.mix = m.id; savePrefs(); renderMix(); applyLanguage(); renderModeCards(); box.querySelector(`[data-mode="${m.id}"]`).focus(); };
+    card.querySelector('.mode-preview').onclick = () => voice.say(m.id === 'mixed' ? `${copy.sample} Equation.` : copy.sample, { lang: S.prefs.lang });
+    box.appendChild(card);
+  });
 }
 
 async function finishOnboarding() {
+  voice.stop();
   S.prefs.onboarded = true;
   savePrefs();
   clearTimeout(S.greetTimer);
@@ -514,7 +525,8 @@ export function addTutor(r, { speak = true, history = true, extra, kind = 'reply
   removeThinking();
   const el = document.createElement('div');
   el.className = 'msg tutor glass-2 z2';
-  el.lang = L().tag;
+  r = { ...r, language: r.language || S.prefs.lang, mix: r.mix || S.prefs.mix };
+  el.lang = r.mix === 'english' ? 'en' : r.language;
   el.innerHTML = `<span class="edge-sweep" aria-hidden="true"></span><div class="msg-who">Christina</div><div class="msg-text"></div><div class="msg-foot"></div>`;
   log.appendChild(el);
   animate(el, [
@@ -523,6 +535,10 @@ export function addTutor(r, { speak = true, history = true, extra, kind = 'reply
   ], { duration: DUR.l, easing: EASE.out, heavy: true }, 'enter');
   const textEl = el.querySelector('.msg-text');
   stream(textEl, rich(r.screen));
+  if (r.mix === 'english' || r.mix === 'bilingual') {
+    const sub = document.createElement('div'); sub.className = 'spoken-subtitle'; sub.lang = r.language;
+    sub.innerHTML = rich(r.speak || ''); el.appendChild(sub);
+  }
   const foot = el.querySelector('.msg-foot');
   if (r.mistake) {
     const m = document.createElement('span');
@@ -576,7 +592,7 @@ function karaokeMap(textEl, speakText) {
 }
 
 function speakMessage(el, r, btn) {
-  const textEl = el.querySelector('.msg-text');
+  const textEl = el.querySelector('.spoken-subtitle') || el.querySelector('.msg-text');
   if (btn?.classList.contains('playing')) { voice.stop(); return; }
   const { tokens, map } = karaokeMap(textEl, r.speak);
   let lit = null;
@@ -585,6 +601,7 @@ function speakMessage(el, r, btn) {
   document.querySelectorAll('.listen-btn.playing').forEach((b) => b.classList.remove('playing'));
   btn?.classList.add('playing');
   voice.say(r.speak, {
+    lang: r.language || S.prefs.lang,
     onWord: (i) => {
       if (S.prefs.muted) return;
       const t = tokens[map[i]];
@@ -1372,13 +1389,14 @@ function setMix(v) {
   S.prefs.mix = v;
   savePrefs();
   renderMix();
+  applyLanguage();
   const m = MIXES.find((x) => x.id === v);
-  toast(`${L().mixes[MIXES.indexOf(m)]} · ${m.tip}. Christina's next reply will use it.`, { kind: 'ok', ms: 2800 });
+  toast(`${lessonCopy(S.prefs.lang).modes[MIXES.indexOf(m)]} · ${m.tip}. Christina's next reply will use it.`, { kind: 'ok', ms: 2800 });
 }
 
 function renderMix() {
   const box = $('mix');
-  const names = L().mixes;
+  const names = lessonCopy(S.prefs.lang).modes;
   box.querySelectorAll('button').forEach((b, i) => {
     b.textContent = names[i] || MIXES[i].label;
     b.setAttribute('aria-checked', String(b.dataset.mix === S.prefs.mix));
@@ -1563,7 +1581,7 @@ $('panelBtn').addEventListener('click', () => (panel.classList.contains('open') 
 $('settingsBtn').addEventListener('click', (e) => { buildSettings(); openDialog($('settingsDlg'), e.currentTarget); });
 $('aboutBtn').addEventListener('click', (e) => openAbout(e.currentTarget));
 $('recheck').addEventListener('click', async () => { renderServices(null); try { renderServices(await api('health')); } catch (e) { renderServices({ error: e.message }); } });
-$('langPill').addEventListener('click', (e) => openLangPicker(e.currentTarget));
+$('langPill').addEventListener('click', (e) => showOnboarding());
 $('setLang').addEventListener('click', (e) => openLangPicker(e.currentTarget));
 $('mix').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => setMix(b.dataset.mix)));
 $('replayIntro').addEventListener('click', () => { closeDialog($('settingsDlg')); setTimeout(showOnboarding, 300); });

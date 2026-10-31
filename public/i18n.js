@@ -178,10 +178,29 @@ export const byCode = (code) => LANGS.find((l) => l.code === code) || LANGS.find
 // English labels used alongside native words (rung tooltips, settings, a11y).
 export const RUNGS = ['Nudge', 'Concept', 'Example', 'Next step'];
 export const MIXES = [
-  { id: 'pure', label: 'Pure', tip: 'Textbook regional terms' },
-  { id: 'mixed', label: 'Mixed', tip: 'How students actually talk' },
-  { id: 'bilingual', label: '+ English', tip: 'Every term in both languages' },
+  { id: 'pure', label: 'Fully regional', tip: 'Read and hear textbook language' },
+  { id: 'mixed', label: 'Regional + English words', tip: 'Familiar speech with English terms' },
+  { id: 'english', label: 'Read English, hear regional', tip: 'English textbook, mother-tongue explanation' },
+  { id: 'bilingual', label: 'Both on screen', tip: 'English and regional lines together' },
 ];
+// Setup copy is local and works before any AI connection.
+const SETUP = {
+ 'en-IN': ['How should Christina teach?', 'Fully English', 'English + familiar words', 'Read English, hear English', 'Both on screen', 'An equation is like a balanced scale.', 'Your turn', 'Explain board', 'Transcript', 'Continue learning'],
+ 'kn-IN': ['ಕ್ರಿಸ್ಟಿನಾ ಹೇಗೆ ಕಲಿಸಬೇಕು?', 'ಸಂಪೂರ್ಣ ಕನ್ನಡ', 'ಕನ್ನಡ + English ಪದಗಳು', 'ಓದಲು English, ಕೇಳಲು ಕನ್ನಡ', 'ಎರಡೂ ಭಾಷೆಗಳಲ್ಲಿ ಓದಿ', 'ಸಮೀಕರಣವು ಸಮತೋಲನದ ತಕ್ಕಡಿಯಂತಿದೆ.', 'ಈಗ ನಿಮ್ಮ ಸರದಿ', 'ಕಲಿಕೆಯ ಫಲಕ', 'ಸಂಭಾಷಣೆ', 'ಕಲಿಕೆ ಮುಂದುವರಿಸಿ'],
+ 'hi-IN': ['क्रिस्टीना कैसे पढ़ाए?', 'पूरी हिन्दी', 'हिन्दी + English शब्द', 'पढ़ें English, सुनें हिन्दी', 'दोनों भाषाओं में पढ़ें', 'समीकरण एक संतुलित तराजू जैसा है।', 'अब आपकी बारी', 'सीखने का बोर्ड', 'बातचीत', 'सीखना जारी रखें'],
+ 'ta-IN': ['கிறிஸ்டினா எப்படி கற்பிக்க வேண்டும்?', 'முழுவதும் தமிழ்', 'தமிழ் + English சொற்கள்', 'படிக்க English, கேட்க தமிழ்', 'இரு மொழிகளிலும் படிக்க', 'சமன்பாடு ஒரு சமநிலைத் தராசு போன்றது.', 'இப்போது உங்கள் முறை', 'கற்றல் பலகை', 'உரையாடல்', 'தொடர்ந்து கற்கவும்'],
+ 'te-IN': ['క్రిస్టినా ఎలా నేర్పాలి?', 'పూర్తిగా తెలుగు', 'తెలుగు + English పదాలు', 'చదవడం English, వినడం తెలుగు', 'రెండు భాషల్లో చదవండి', 'సమీకరణం సమతుల్య త్రాసు వంటిది.', 'ఇప్పుడు మీ వంతు', 'అభ్యాస బోర్డు', 'సంభాషణ', 'నేర్చుకోవడం కొనసాగించండి'],
+ 'ml-IN': ['ക്രിസ്റ്റീന എങ്ങനെ പഠിപ്പിക്കണം?', 'പൂർണ്ണമായും മലയാളം', 'മലയാളം + English വാക്കുകൾ', 'വായിക്കാൻ English, കേൾക്കാൻ മലയാളം', 'രണ്ടു ഭാഷകളിലും വായിക്കുക', 'സമവാക്യം തുലനത്തിലുള്ള ത്രാസ് പോലെയാണ്.', 'ഇനി നിങ്ങളുടെ ഊഴം', 'പഠന ബോർഡ്', 'സംഭാഷണം', 'പഠനം തുടരുക'],
+ 'mr-IN': ['क्रिस्टिनाने कसे शिकवावे?', 'पूर्ण मराठी', 'मराठी + English शब्द', 'वाचा English, ऐका मराठी', 'दोन्ही भाषांत वाचा', 'समीकरण म्हणजे संतुलित तराजू.', 'आता तुमची पाळी', 'शिकण्याचा फळा', 'संभाषण', 'शिकत राहा'],
+ 'bn-IN': ['ক্রিস্টিনা কীভাবে শেখাবে?', 'সম্পূর্ণ বাংলা', 'বাংলা + English শব্দ', 'পড়ুন English, শুনুন বাংলা', 'দুই ভাষায় পড়ুন', 'সমীকরণ একটি ভারসাম্যপূর্ণ দাঁড়িপাল্লার মতো।', 'এবার আপনার পালা', 'শেখার বোর্ড', 'কথোপকথন', 'শেখা চালিয়ে যান'],
+ 'gu-IN': ['ક્રિસ્ટિનાએ કેવી રીતે શીખવવું?', 'સંપૂર્ણ ગુજરાતી', 'ગુજરાતી + English શબ્દો', 'વાંચો English, સાંભળો ગુજરાતી', 'બંને ભાષામાં વાંચો', 'સમીકરણ સંતુલિત ત્રાજવા જેવું છે.', 'હવે તમારો વારો', 'શીખવાનું બોર્ડ', 'વાતચીત', 'શીખવાનું ચાલુ રાખો'],
+ 'pa-IN': ['ਕ੍ਰਿਸਟੀਨਾ ਕਿਵੇਂ ਪੜ੍ਹਾਵੇ?', 'ਪੂਰੀ ਪੰਜਾਬੀ', 'ਪੰਜਾਬੀ + English ਸ਼ਬਦ', 'ਪੜ੍ਹੋ English, ਸੁਣੋ ਪੰਜਾਬੀ', 'ਦੋਵੇਂ ਭਾਸ਼ਾਵਾਂ ਵਿੱਚ ਪੜ੍ਹੋ', 'ਸਮੀਕਰਨ ਸੰਤੁਲਿਤ ਤੱਕੜੀ ਵਰਗਾ ਹੈ।', 'ਹੁਣ ਤੁਹਾਡੀ ਵਾਰੀ', 'ਸਿੱਖਣ ਦਾ ਬੋਰਡ', 'ਗੱਲਬਾਤ', 'ਸਿੱਖਣਾ ਜਾਰੀ ਰੱਖੋ'],
+ 'od-IN': ['କ୍ରିଷ୍ଟିନା କିପରି ଶିଖାଇବେ?', 'ସମ୍ପୂର୍ଣ୍ଣ ଓଡ଼ିଆ', 'ଓଡ଼ିଆ + English ଶବ୍ଦ', 'ପଢ଼ନ୍ତୁ English, ଶୁଣନ୍ତୁ ଓଡ଼ିଆ', 'ଦୁଇ ଭାଷାରେ ପଢ଼ନ୍ତୁ', 'ସମୀକରଣ ଏକ ସନ୍ତୁଳିତ ତରାଜୁ ପରି।', 'ଏବେ ଆପଣଙ୍କ ପାଳି', 'ଶିକ୍ଷା ବୋର୍ଡ', 'କଥାବାର୍ତ୍ତା', 'ଶିଖିବା ଜାରି ରଖନ୍ତୁ'],
+};
+export function lessonCopy(code) {
+ const t = SETUP[code] || SETUP['en-IN'];
+ return { mode: t[0], modes: t.slice(1,5), sample: t[5], turn: t[6], board: t[7], transcript: t[8], next: t[9] };
+}
 export const EXAMPLE_META = [
   { icon: 'i-equation', subject: 'maths' },
   { icon: 'i-leaf', subject: 'biology' },

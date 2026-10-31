@@ -34,13 +34,14 @@
     <!-- z1: nav -->
     <header class="nav glass-1 z1" id="nav">
       <a class="brand" href="#" id="brand" aria-label="Christina, start again"><span class="brand-orb" aria-hidden="true"></span><span class="brand-name">Christina</span></a>
-      <button class="lang-pill press" id="langPill" type="button" aria-label="Change language">
+      <button class="lang-pill press" id="langPill" type="button" aria-label="Change language, class and teaching mode">
         <span class="lp-inner"><span class="lp-front" id="langName">English</span><span class="lp-back" aria-hidden="true">Change</span></span>
       </button>
       <div class="mix" id="mix" role="radiogroup" aria-label="Language mix">
         <span class="mix-ind" aria-hidden="true"></span>
         <button type="button" role="radio" data-mix="pure" title="Textbook regional terms">Pure</button>
         <button type="button" role="radio" data-mix="mixed" title="How students actually talk">Mixed</button>
+        <button type="button" role="radio" data-mix="english">Read English</button>
         <button type="button" role="radio" data-mix="bilingual" title="Every term in both languages">+ English</button>
       </div>
       <span class="grow"></span>
@@ -215,11 +216,13 @@
 
   <!-- Onboarding -->
   <section class="onboard" id="onboard" hidden aria-label="Welcome">
+    <div class="ob-brand" lang="en">CHRISTINA <span>YOUR PERSONAL LEARNING SPACE</span></div>
     <div class="ob-greet" id="obGreet" aria-hidden="true"></div>
     <h1 class="ob-title" id="obTitle">Choose your language</h1>
     <div class="tiles" id="obTiles" role="radiogroup" aria-label="Language"></div>
     <div class="ob-section"><span class="ob-label" id="obClassLabel">Your class</span><div class="coins" id="obClass" role="radiogroup" aria-label="Class"></div></div>
-    <div class="ob-section"><span class="ob-label">Christina's voice</span><div class="seg" id="obVoice" role="radiogroup" aria-label="Voice"><button type="button" role="radio" data-v="female">Female</button><button type="button" role="radio" data-v="male">Male</button></div></div>
+    <div class="ob-section ob-mode-section"><h2 class="ob-label" id="obModeLabel">How should Christina teach?</h2><div id="obModes" class="mode-grid" role="radiogroup" aria-labelledby="obModeLabel"></div></div>
+    <div id="obVoice" hidden><button data-v="female" type="button"></button><button data-v="male" type="button"></button></div>
     <button class="btn primary ob-start" id="obStart" type="button" data-magnetic><span id="obStartLabel">Start learning</span><svg class="ic"><use href="#i-arrow"/></svg></button>
   </section>
 
