@@ -31,7 +31,7 @@ export class ExplainBoard {
     const lite = tier() === 'lite';
     const diagram = renderVisual(beat.visual);
     const display = lite ? this.beats.map(b => b.screen).join('\n\n') : beat.screen;
-    content.innerHTML = `${diagram ? `<figure class="visual stage-visual" lang="${esc(this.reply.language)}">${diagram}<figcaption>${esc(beat.visual.caption || '')}</figcaption></figure>` : ''}<div class="beat-text" lang="${this.reply.mix === 'english' ? 'en' : esc(this.reply.language)}">${rich(display)}</div>${['english','bilingual'].includes(this.reply.mix) ? `<div class="spoken-subtitle" lang="${esc(this.reply.language)}">${rich(beat.speak)}</div>` : ''}`;
+    content.innerHTML = `${diagram ? `<figure class="visual stage-visual" lang="${esc(this.reply.language)}">${diagram}<figcaption>${esc(beat.visual.caption || '')}</figcaption></figure>` : ''}<div class="beat-copy"><div class="beat-text" lang="${this.reply.mix === 'english' ? 'en' : esc(this.reply.language)}">${rich(display)}</div>${['english','bilingual'].includes(this.reply.mix) ? `<div class="spoken-subtitle" lang="${esc(this.reply.language)}">${rich(beat.speak)}</div>` : ''}</div>`;
     const svg = content.querySelector('svg'); if (svg) svg.setAttribute('aria-label', beat.visual.caption || this.copy.board);
     if (!reduced() && !lite) content.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 240 });
     this.host.querySelector('.previous').disabled = i === 0;

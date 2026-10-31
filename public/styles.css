@@ -855,3 +855,16 @@ input[type='range'] { width: 100%; accent-color: var(--cyan); }
 
 .onboard > * { flex-shrink: 0; }
 .tiles.has-choice .tile-lang:not([aria-checked='true']) { opacity: .85; }
+
+@media(min-width:1000px) {
+ .beat-content:has(.stage-visual) { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1.2rem; align-items: center; }
+ .stage-visual { margin: 0; }
+ .beat-text { font-size: 1.05rem; }
+}
+.explain-board { padding: 1.15rem; }
+.beat-progress { margin: 0 0 .65rem; }
+.beat-dot { min-height: 24px; }
+.beat-copy { min-width: 0; }
+.beat-copy .spoken-subtitle { font-size: .85rem; }
+.stage-visual svg { max-height: 13rem; }
+.lesson-busy { position: sticky; top: 0; z-index: 3; padding: .7rem 1rem; background: #112531; border: 1px solid var(--cyan); border-radius: 1rem; }

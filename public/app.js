@@ -515,6 +515,7 @@ export function addStudent(text) {
 
 function showThinking(label) {
   removeThinking();
+  const status = document.createElement('div'); status.id = 'lessonBusy'; status.className = 'lesson-busy'; status.setAttribute('role', 'status'); status.textContent = label || ui('thinking'); $('lesson').prepend(status);
   const el = document.createElement('div');
   el.className = 'thinking glass-2 z2';
   el.id = 'thinking';
@@ -525,7 +526,7 @@ function showThinking(label) {
   setMood('thinking');
 }
 
-function removeThinking() { $('thinking')?.remove(); }
+function removeThinking() { $('thinking')?.remove(); $('lessonBusy')?.remove(); }
 
 // Christina's message: arcs in, words stream, voice starts, the spoken word glows (karaoke).
 export function addTutor(r, { speak = true, history = true, extra, kind = 'reply' } = {}) {
@@ -566,7 +567,7 @@ export function addTutor(r, { speak = true, history = true, extra, kind = 'reply
   }
   if (!foot.children.length) foot.remove();
   scrollLog();
-  if (history && S.lesson) S.lesson.history.push({ role: 'assistant', content: r.screen });
+  if (history && S.lesson) S.lesson.history.push({ role: 'assistant', content: [r.screen, r.question].filter(Boolean).join('\n') });
   S.lastReply = { el, r };
   if (r.beats?.length) {
     explain.show(r, () => speakMessage(el, r, el.querySelector('.listen-btn')));
