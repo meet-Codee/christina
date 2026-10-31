@@ -1378,7 +1378,7 @@ function toggleSetup(btn, value, onChange) {
 function buildSettings() {
   buildCoins($('setClass'));
   const mixBox = $('setMix');
-  mixBox.innerHTML = MIXES.map((m) => `<button type="button" role="radio" data-mix="${m.id}" title="${m.tip}">${m.label}</button>`).join('');
+  mixBox.innerHTML = MIXES.map((m, i) => `<button type="button" role="radio" data-mix="${m.id}" title="${m.tip}">${esc(lessonCopy(S.prefs.lang).modes[i])}</button>`).join('');
   segSetup(mixBox, 'mix', S.prefs.mix, (v) => setMix(v));
   segSetup($('setVoice'), 'v', S.prefs.voice, (v) => { S.prefs.voice = v; savePrefs(); voice.say(L().ui.greet); });
   const pace = $('setPace');
