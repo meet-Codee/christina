@@ -72,7 +72,7 @@ function tutorReply(system, lastUser) {
   const render = (local, en) => english ? en : both ? `${en}\n${local}` : local;
   const steps = start ? lines : [r.solved ? lines[0] : r.screen];
   const beats = steps.map((line,i) => ({ screen: render(line, definitions.English[i] || definitions.English[0]), speak: start || r.solved ? line : r.speak, visual: {type: r.solved ? 'none' : 'balance', left: '3x + 7', right: '22', operation: i === 1 ? '−7 | −7' : '=', caption: ''} }));
-  const noQuestions = /basics|no questions|do not ask/i.test(system + lastUser);
+  const noQuestions = /basics|no questions|do not ask/i.test((system.split('THE PROBLEM\n')[1] || '').split('THE HINT LADDER')[0] + lastUser);
   return { ...r, beats, screen: beats.map(b=>b.screen).join('\n'), speak: beats.map(b=>b.speak).join(' '), question: noQuestions || r.solved ? '' : render('?', 'Which operation keeps the balance?'), choices: noQuestions || r.solved ? [] : ['−7 | −7', '+7 | +7'] };
 }
 
