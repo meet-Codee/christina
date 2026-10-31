@@ -1868,6 +1868,13 @@ async function init() {
     toast(e.message, { kind: 'err', ms: 8000 });
   }
 
+  // Warm-up: open the server's AI connections now so the first real turn is fast.
+  if (S.config.brain) {
+    api('warm', {}, { quiet: true }).catch(() => {});
+    let lastWarm = Date.now();
+    $('ask')?.addEventListener('focus', () => { if (Date.now() - lastWarm > 60_000) { lastWarm = Date.now(); api('warm', {}, { quiet: true }).catch(() => {}); } });
+  }
+
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }

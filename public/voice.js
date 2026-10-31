@@ -113,6 +113,7 @@ export class Voice {
     const key = this.cacheKey(sentence, lang);
     const bufPromise = this.decode(bytes.buffer);
     this.predecoded.set(key, { bufPromise, by: audioObj.by || 'stream', ms: audioObj.ms || 1 });
+    while (this.predecoded.size > 24) this.predecoded.delete(this.predecoded.keys().next().value);
   }
 
   // Returns an array of promises, one AudioBuffer (or null) per sentence, fetched as fast as possible.
@@ -122,7 +123,8 @@ export class Voice {
     const sentStats = ss.map((s, i) => ({ index: i, text: s, ms: 0, by: 'cache', cached: true }));
     window.__lastVoiceTimings = sentStats;
     const looked = ss.map((s, i) => {
-      const pre = this.predecoded.get(this.cacheKey(s, lang));
+      const k = this.cacheKey(s, lang);
+      const pre = this.predecoded.get(k);
       if (pre) {
         sentStats[i].ms = pre.ms || Math.max(1, Math.round(performance.now() - tSynth0));
         sentStats[i].by = pre.by || 'stream';
@@ -158,8 +160,7 @@ export class Voice {
         });
         if (retry.length) await fetchGroup(retry, attempt + 1);
       };
-      const p0 = groups.length ? fetchGroup(groups[0]).catch((e) => { groups[0].forEach((i) => fetched.set(i, null)); throw e; }) : Promise.resolve();
-      const promises = groups.map((g, gi) => (gi === 0 ? p0 : p0.catch(() => {}).then(() => fetchGroup(g).catch((e) => { g.forEach((i) => fetched.set(i, null)); throw e; }))));
+      const promises = groups.map((g) => fetchGroup(g).catch((e) => { g.forEach((i) => fetched.set(i, null)); throw e; }));
       return { cached, promises, fetched };
     });
     return ss.map((_, i) => settle.then(async ({ cached, promises, fetched }) => {
@@ -202,7 +203,27 @@ export class Voice {
     try {
       for (let i = 0; i < ss.length; i++) {
         let buf;
-        try { buf = await bufs[i]; } catch (e) {
+        try {
+          if (i === 0 && window.speechSynthesis) {
+            const timedOut = Symbol('timeout');
+            let timer = null;
+            const race = await Promise.race([
+              bufs[0].then((b) => { clearTimeout(timer); return b; }),
+              new Promise((r) => { timer = setTimeout(() => r(timedOut), 1950); }),
+            ]).catch((e) => { clearTimeout(timer); throw e; });
+            if (race === timedOut) {
+              bufs[0].catch(() => {});
+              if (gen !== this.gen) return;
+              if (!started) { started = true; opts.onStart?.(); }
+              await this.device([ss[0]], lang, { onWord: (w) => opts.onWord?.(wordBase[0] + w), keepSpeaking: true }, gen);
+              next = ctx.currentTime;
+              continue;
+            }
+            buf = race;
+          } else {
+            buf = await bufs[i];
+          }
+        } catch (e) {
           if (gen !== this.gen) return;
           if (i === 0) { // the premium voice is unavailable: speak with the device voice instead
             this.premiumBroken = Date.now();
@@ -285,7 +306,12 @@ export class Voice {
     const p = this.prefs();
     const voices = synth.getVoices();
     const speechLang = lang === 'od-IN' ? 'or-IN' : lang;
-    const v = voices.find((x) => x.lang === speechLang) || voices.find((x) => x.lang?.startsWith(speechLang.slice(0, 2))) || null;
+    const prefix = speechLang.slice(0, 2).toLowerCase();
+    const v = voices.find((x) => x.lang?.toLowerCase() === speechLang.toLowerCase())
+      || voices.find((x) => x.lang?.toLowerCase().startsWith(prefix) && /-in$/i.test(x.lang))
+      || voices.find((x) => x.lang?.toLowerCase().startsWith(prefix))
+      || voices.find((x) => /-in$/i.test(x.lang))
+      || null;
     this.speaking = true;
     if (!opts.keepSpeaking) this.onSpeaking(true);
     let t0 = performance.now();
@@ -297,7 +323,7 @@ export class Voice {
         if (this.orb) this.orb.energy = null;
         if (!opts.keepSpeaking && gen === this.gen) { this.speaking = false; this.onSpeaking(false); }
         resolve();
-        if (gen === this.gen) opts.onEnd?.();
+        if (gen === this.gen && !opts.keepSpeaking) opts.onEnd?.();
       };
       const speakOne = (i) => {
         if (gen !== this.gen) return finish();
@@ -334,6 +360,26 @@ export class Voice {
     if (this.speaking) { this.speaking = false; this.onSpeaking(false); }
     this.orb?.detach(this.analyser);
     if (this.orb) this.orb.energy = null;
+  }
+
+  // Quietly warm common phrases into Cache Storage (christina-voice-v1) so repeated phrases and Listen again are 0 ms.
+  async warmup(phrases = [], lang) {
+    const p = this.prefs();
+    if (p.freeVoice || p.muted) return;
+    const targetLang = lang || p.lang;
+    const list = [...new Set(phrases.flatMap((t) => sentences(t, targetLang)).filter(Boolean))].slice(0, 6);
+    const uncached = [];
+    for (const s of list) {
+      const hit = await this.fromCache(s, targetLang);
+      if (!hit) uncached.push(s);
+    }
+    if (!uncached.length) return;
+    try {
+      const res = await this.api('speak', { sentences: uncached.slice(0, 3), language: targetLang, voice: p.voice, pace: this.pace() }, { quiet: true });
+      res?.audios?.forEach((a, i) => {
+        if (a?.audio && uncached[i]) this.toCache(uncached[i], targetLang, b64ToBytes(a.audio));
+      });
+    } catch { /* ignore background warm-up errors */ }
   }
 
   // All sentences as AudioBuffers (for sharing the parent voice note as one file).
