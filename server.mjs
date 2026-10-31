@@ -137,7 +137,10 @@ const firstPort = Number(process.env.PORT) || 3000;
 
 function listen(port, triesLeft) {
   server.once('error', (e) => {
-    if (e.code === 'EADDRINUSE' && triesLeft > 0) return listen(port + 1, triesLeft - 1);
+    if (e.code === 'EADDRINUSE' && triesLeft > 0) {
+      server.removeAllListeners('listening'); // discard the failed port's callback before retrying
+      return listen(port + 1, triesLeft - 1);
+    }
     console.error(`Could not start: ${e.message}`);
     process.exit(1);
   });
