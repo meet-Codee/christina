@@ -1,0 +1,5 @@
+# Copy this file to keys.txt (or just run `node server.mjs`, which creates keys.txt for you).
+# keys.txt is gitignored. Never commit it.
+GEMINI_API_KEY=
+SARVAM_API_KEY=
+# APP_PASSCODE=
