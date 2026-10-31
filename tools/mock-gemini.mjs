@@ -60,20 +60,52 @@ function tutorReply(system, lastUser) {
   const language = langFrom(system);
   const r = legacyTutorReply(system, lastUser);
   const definitions = {
-    Kannada: ['ಸಮೀಕರಣವು ಎರಡು ಸಮಾನ ಮೌಲ್ಯಗಳನ್ನು ತೋರಿಸುತ್ತದೆ. ತಕ್ಕಡಿಯ ಎರಡೂ ಬದಿಗಳು ಸಮವಾಗಿರಬೇಕು.', 'ಒಂದು ಬದಿಯಿಂದ ಏಳು ತೆಗೆದರೆ ಇನ್ನೊಂದು ಬದಿಯಿಂದಲೂ ಏಳು ತೆಗೆಯಬೇಕು. ಹೀಗೆ ಸಮತೋಲನ ಉಳಿಯುತ್ತದೆ.'],
-    Hindi: ['समीकरण दो बराबर मात्राएँ दिखाता है। तराजू के दोनों पलड़े बराबर रहते हैं।', 'एक तरफ से सात हटाएँ तो दूसरी तरफ से भी सात हटाएँ। इससे बराबरी बनी रहती है।'],
-    Tamil: ['சமன்பாடு இரண்டு சமமான அளவுகளைக் காட்டுகிறது. தராசின் இரு பக்கமும் சமமாக இருக்க வேண்டும்.', 'ஒரு பக்கத்தில் ஏழைக் கழித்தால் மறுபக்கத்திலும் ஏழைக் கழிக்க வேண்டும். சமநிலை மாறாது.'],
-    English: ['An equation says two quantities are equal. Think of a balanced scale: both sides have the same value.', 'Taking seven away from each side keeps the scale balanced. The same change on both sides preserves equality.'],
+    Kannada: [
+      'ಸಮೀಕರಣವು ಎರಡು ಸಮಾನ ಮೌಲ್ಯಗಳನ್ನು ತೋರಿಸುತ್ತದೆ: $3x + 7 = 22$ ತಕ್ಕಡಿಯ ಎರಡೂ ಬದಿಗಳಂತೆ ಸಮವಾಗಿದೆ.',
+      'ಒಂದು ಬದಿಯಿಂದ $7$ ತೆಗೆದರೆ ಇನ್ನೊಂದು ಬದಿಯಿಂದಲೂ $7$ ತೆಗೆಯಬೇಕು. ಹೀಗೆ **ಸಮತೋಲನ** ಉಳಿಯುತ್ತದೆ.',
+      'ಈಗ ಎಡಬದಿಯಲ್ಲಿ $3x$ ಮಾತ್ರ ಉಳಿದಿದೆ. ಬಲಬದಿಯಲ್ಲಿ $22 - 7 = ?$ ಎಷ್ಟಾಗುತ್ತದೆ ಎಂದು ಯೋಚಿಸು.',
+    ],
+    Hindi: [
+      'समीकरण दो बराबर मात्राएँ दिखाता है: $3x + 7 = 22$ तराजू के दोनों बराबर पलड़ों जैसा है।',
+      'एक तरफ से $7$ हटाएँ तो दूसरी तरफ से भी $7$ हटाएँ। इससे **बराबरी** बनी रहती है।',
+      'अब बाईं तरफ़ सिर्फ़ $3x$ बचा है। दाईं तरफ़ $22 - 7 = ?$ कितना होगा?',
+    ],
+    Tamil: [
+      'சமன்பாடு இரண்டு சமமான அளவுகளைக் காட்டுகிறது: $3x + 7 = 22$ தராசின் இரு சம தட்டுகள் போன்றது.',
+      'ஒரு பக்கத்தில் $7$ ஐக் கழித்தால் மறுபக்கத்திலும் $7$ ஐக் கழிக்க வேண்டும். **சமநிலை** மாறாது.',
+      'இப்போது இடது பக்கம் $3x$ மட்டும் உள்ளது. வலது பக்கம் $22 - 7 = ?$ என்ன வரும்?',
+    ],
+    English: [
+      'An equation says two quantities are equal: in $3x + 7 = 22$, both pans of the balance hold the same weight.',
+      'Taking $7$ away from each side keeps the scale **balanced**. Whatever we do to one side, we do to the other.',
+      'Now the left pan has $3x$ alone, and the right pan is $22 - 7 = ?$.',
+    ],
   };
   const english = /DISPLAY: screen, beat screen/.test(system);
   const both = /DISPLAY: each short English/.test(system);
-  const start = /The student has just shared/.test(lastUser);
+  const noQuestions = /basics|no questions|do not ask|Do NOT ask any question/i.test((system.split('THE PROBLEM\n')[1] || '').split('\n\n')[0] + lastUser);
+  const start = /The student has just shared|wants to learn the basics/.test(lastUser);
   const lines = definitions[language];
-  const render = (local, en) => english ? en : both ? `${en}\n${local}` : local;
+  const render = (local, en) => (english ? en : both ? `${en}\n${local}` : local);
   const steps = start ? lines : [r.solved ? lines[0] : r.screen];
-  const beats = steps.map((line,i) => ({ screen: render(line, definitions.English[i] || definitions.English[0]), speak: start || r.solved ? line : r.speak, visual: {type: r.solved ? 'none' : 'balance', left: '3x + 7', right: '22', operation: i === 1 ? '−7 | −7' : '=', caption: ''} }));
-  const noQuestions = /basics|no questions|do not ask/i.test((system.split('THE PROBLEM\n')[1] || '').split('\n\n')[0] + lastUser);
-  return { ...r, beats, screen: beats.map(b=>b.screen).join('\n'), speak: beats.map(b=>b.speak).join(' '), question: noQuestions || r.solved ? '' : render('?', 'Which operation keeps the balance?'), choices: noQuestions || r.solved ? [] : ['−7 | −7', '+7 | +7'] };
+  const visuals = [
+    { type: 'balance', left: '3x + 7', right: '22', operation: '=', caption: '3x + 7 = 22' },
+    { type: 'balance', left: '3x + 7', right: '22', operation: '− 7 | − 7', caption: '− 7 | − 7' },
+    { type: 'balance', left: '3x', right: '?', operation: '=', caption: '3x = ?' },
+  ];
+  const beats = steps.map((line, i) => ({
+    screen: render(line, definitions.English[i] || definitions.English[0]),
+    speak: (start || r.solved ? line : r.speak).replace(/\$|\*/g, ''),
+    visual: r.solved ? { type: 'balance', left: 'x', right: '✓', operation: '=', caption: '' } : visuals[Math.min(i, 2)],
+  }));
+  return {
+    ...r,
+    beats,
+    screen: beats.map((b) => b.screen).join('\n\n'),
+    speak: beats.map((b) => b.speak).join(' '),
+    question: noQuestions || r.solved ? '' : render(r.start?.screen || 'ಮೊದಲು ಎರಡೂ ಬದಿಗೆ ಏನು ಮಾಡೋಣ?', 'Which operation keeps the balance?'),
+    choices: noQuestions || r.solved ? [] : ['− 7 | − 7', '+ 7 | + 7', '÷ 3 | ÷ 3'],
+  };
 }
 
 function pcm(seconds) {

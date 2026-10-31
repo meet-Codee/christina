@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanVisual, lessonIssues, TUTOR_PROMPT } from '../lib/core.js';
+import { cleanVisual, ensureBeatVisuals, lessonIssues, TUTOR_PROMPT } from '../lib/core.js';
 globalThis.matchMedia = () => ({ matches: false });
 globalThis.document = { documentElement: { dataset: {} } };
 const { renderVisual } = await import('../public/visual.js');
@@ -31,11 +31,25 @@ test('visual whitelist drops markup and bounds numerical input', () => {
     assert.ok(!svg.includes('NaN'));
   }
 });
+test('ensureBeatVisuals guarantees progressive diagrams across all 3 beats without leaking answers', () => {
+  const b = { language: 'kn-IN', mix: 'mixed', problem: 'Solve 3x + 7 = 22' };
+  const raw = [
+    { screen: 'Beat 1', speak: 'Beat 1', visual: cleanVisual({ type: 'balance', left: '3x + 7', right: '22', operation: '=' }) },
+    { screen: 'Beat 2', speak: 'Beat 2', visual: cleanVisual({ type: 'none' }) },
+    { screen: 'Beat 3', speak: 'Beat 3', visual: cleanVisual({ type: 'none' }) },
+  ];
+  const fixed = ensureBeatVisuals(raw, b);
+  assert.equal(fixed.length, 3);
+  assert.ok(fixed.every((beat) => beat.visual.type === 'balance'));
+  assert.equal(fixed[1].visual.operation, '− 7 | − 7');
+  assert.equal(fixed[2].visual.left, '3x');
+  assert.equal(fixed[2].visual.right, '?');
+});
 test('teaching and language prompts keep no-answer rule and optional questions', () => {
   for (const mix of MIXES) {
     const prompt = TUTOR_PROMPT({ language: 'kn-IN', grade: 6, mix: mix.id, problem: 'Teach equations' });
     assert.match(prompt, /Never state the final answer/);
     assert.match(prompt, /Do not replace teaching with questions/);
-    assert.match(prompt, /Unknown results must be "\?"/);
+    assert.match(prompt, /Unknown results must always be "\?"/);
   }
 });
