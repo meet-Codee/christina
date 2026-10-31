@@ -8,22 +8,19 @@ Christina 2.0 was rebuilt from the docs in this repo and every phase of `docs/MA
 
 | Phase | Status | Main files |
 |---|---|---|
-| 1. API | Done: `/api/health`, structured output (`responseSchema`), friendly error codes, model rotation with cool-down, batch `/api/speak`, `check-work`, `practice`, `visual`, `mood` | `lib/core.js`, `server.mjs`, `api/[action].js`, `netlify/functions/api.mjs` |
-| 2. Visual system | Done: glass tiers, depth ladder, page-load sequence, View Transitions, quality tiers + FPS watchdog, reduced motion, per-akshara text animation | `public/styles.css`, `public/motion.js`, `public/orb.js`, `public/aurora.js` |
-| 3. P0 | Done: F1 sentence voice, F2 karaoke, F3 Call mode, F4 Scratchpad | `public/voice.js`, `public/mic.js`, `public/call.js`, `public/scratchpad.js` |
-| 3. P1 | Done: F5 practice, F6 My Sky, F7 Show me, F8 share card | `public/app.js`, `public/sky.js`, `public/visual.js`, `public/share.js` |
-| 3. P2 | Done: F9 PWA, F10 encouragement, F11 language auto-detect, F12 recent lessons | `public/sw.js`, `public/app.js` |
-| 4. QA | Done in headless Chromium against a stand-in for Gemini. Results: `docs/QA_REPORT.md` | |
-| 6. Docs | README (AI tools table, features, 2-minute demo), `AGENTS.md` file map, `docs/API.md` | |
+| 1. API & Pedagogy | Done: `/api/health`, structured output (`responseSchema`), timeout + busy model cool-down (`gemini-3.5-flash-lite` primary), 3-beat progressive visuals (`ensureBeatVisuals`), Basics / no-question teaching mode, 4 language modes (`pure`, `mixed`, `english`, `bilingual`) | `lib/core.js`, `server.mjs`, `api/[action].js`, `netlify/functions/api.mjs` |
+| 2. Visual system & 4K SVG | Done: 4K SVG `<defs>` gradients/glows, balance scale weight blocks, pulsing `?` unknown badges, science schematics (`circuit`, `light_ray`, `food_chain`, `cell`), glass tiers, per-akshara text animation | `public/visual.js`, `public/styles.css`, `public/motion.js`, `public/orb.js`, `public/aurora.js` |
+| 3. Setup, Modes & Explain Board | Done: 3-step first-screen setup (`#onboard`), summary pill (`ಕನ್ನಡ · Class 8 · ಓದಲು English, ಕೇಳಲು ಕನ್ನಡ`), 4 language modes, interactive Explain Board (`public/explain.js`) with synced karaoke in all 4 modes, Basics chip, method choice pills | `public/explain.js`, `public/i18n.js`, `public/index.html`, `public/app.js` |
+| 4. P0–P2 Features | Done: F1 sentence voice, F2 karaoke, F3 Call mode, F4 Scratchpad, F5 practice, F6 My Sky, F7 Show me, F8 share card, F9 PWA, F10 encouragement, F11 language auto-detect, F12 recent lessons | `public/voice.js`, `public/mic.js`, `public/call.js`, `public/scratchpad.js`, `public/sky.js`, `public/share.js`, `public/sw.js` |
+| 5. Real-Key QA | Done: Verified live against real Gemini API + Gemini TTS in Kannada (`kn-IN`), Hindi (`hi-IN`), and Tamil (`ta-IN`) across all 4 language modes and Basics mode, plus 6/6 unit tests (`node --test tools/lesson.test.mjs`). Results: `docs/QA_REPORT.md` | `tools/lesson.test.mjs`, `docs/QA_REPORT.md` |
 
-## What is left (do these next, in order)
+## What is left (for deployment & demo)
 
-1. **Test with the real key.** Put `GEMINI_API_KEY=` in `keys.txt` (never print it), run `node server.mjs`, open http://localhost:3000, tap ⓘ (all dots should be green), then run one lesson in Kannada, Hindi and Tamil: type `Solve 3x + 7 = 22`, give a wrong answer, press H, solve it. Check that Christina never states the final answer, that Pure / Mixed / + English change the wording, and that voice in and out works in each language. If a model name returns 404, set `GEMINI_MODELS` / `GEMINI_TTS_MODELS` to current names.
-2. **Tune prompts only if needed** (`TUTOR_PROMPT` and friends in `lib/core.js`). Never weaken the "never give the final answer" rule.
+1. ✅ **Tested with the real key** (`http://localhost:3000`): `GET /api/config` and `GET /api/health` are green (`gemini-3.5-flash-lite` + `gemini-3.8-flash-tts`), and full lessons (`Solve 3x + 7 = 22`: start → wrong attempt → hint → solve) + Basics mode + all 4 language modes (`pure`, `mixed`, `english`, `bilingual`) + TTS audio have been verified in Kannada, Hindi, and Tamil.
+2. ✅ **Prompts & visual pedagogy tuned** (`TUTOR_PROMPT`, `ensureBeatVisuals`, `scrubSolvedAnswer` in `lib/core.js`).
 3. **Push to GitHub** (a new repo; `keys.txt` and `.env` are gitignored) and **deploy on Vercel**: Framework "Other", no build command, add `GEMINI_API_KEY` (and `SARVAM_API_KEY`), deploy, set `APP_PASSCODE` before sharing the link.
 4. **Phone smoke test** on the https link: mic permission, one lesson, one photo, one Call mode turn, one Scratchpad step.
-5. The remaining ⏳ items in `docs/QA_REPORT.md`: Windows `start-christina.bat`, a screen reader pass, free browser voice, frame rate on a mid-range Android phone.
-6. **Demo prep** (README "Hackathon checklist"): rehearse the demo problems once so their voice is cached, record a backup video, post on LinkedIn.
+5. **Demo prep** (README "Hackathon checklist"): rehearse the demo problems once so their voice is cached, record a backup video, post on LinkedIn.
 
 ## How to test without spending quota
 

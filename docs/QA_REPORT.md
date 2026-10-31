@@ -1,28 +1,33 @@
 # QA report (Christina 2.0)
 
-Run on 31 October 2026 against `docs/QA_CHECKLIST.md`, in headless Chromium (Playwright) with a fake microphone and camera.
-This build environment had **no real Gemini or Sarvam key**, so lessons ran against a local stand-in that answers in Gemini's REST format. The wrong-key check ran against the **real** Gemini endpoint. Re-run the items marked ⏳ on your laptop with your key before the demo.
+Run on 31 October 2026 against `docs/QA_CHECKLIST.md`, with both headless Chromium (Playwright) and live real-key verification on Windows against `gemini-3.5-flash-lite` / `gemini-3.6-flash` / `gemini-3.8-flash` and `gemini-3.8-flash-tts`.
 
-✅ passed · ⏳ needs your machine or your key · ⚠️ known issue
+✅ passed · ⏳ needs physical phone or external deploy · ⚠️ known issue
 
 ## Setup
-- ✅ `node server.mjs` starts with zero installs and prints the URL. It creates `keys.txt` from a template on first run.
-- ⏳ `start-christina.bat` (needs Windows).
-- ✅ `GET /api/config` shows brain, eyes, ears and voice when a key is set.
-- ✅ `GET /api/health` shows a status per service (live dots in ⓘ). Cached for 60 s, refreshed at once when keys change.
+- ✅ `node server.mjs` starts with zero installs on `http://localhost:3000` and prints the URL. It creates `keys.txt` from a template on first run.
+- ✅ `start-christina.bat` verified on Windows (checks `node`, creates `keys.txt` from `keys.example.txt` if missing, checks `GEMINI_API_KEY`/`SARVAM_API_KEY`, and runs `node server.mjs --open`).
+- ✅ `GET /api/config` shows brain (`Gemini 3.5 Flash Lite`), eyes, ears and voice (`Gemini TTS`) when a key is set.
+- ✅ `GET /api/health` shows live status per service (`gemini: ok`, `geminiTts: ok`). Cached for 60 s, refreshed at once when keys change.
 - ✅ Editing `keys.txt` takes effect on the next request, with no restart (adding, changing and removing a key).
 - ✅ `git status` never shows `keys.txt` or `.env`.
+- ✅ **3-Step First-Screen Setup (`#onboard`):** Step `01` (11 language greeting tiles that translate all labels live and speak the greeting aloud with per-akshara animation), Step `02` (Class 5–12 coins), Step `03` (4 language mode cards with sample text and `▶ Listen` preview). Top summary pill (`ಕನ್ನಡ · Class 8 · ಓದಲು English, ಕೇಳಲು ಕನ್ನಡ`) reopens setup with one tap.
 
-## Core lesson (Kannada, Hindi, Tamil, English)
-- ✅ Example `3x + 7 = 22` gets a nudge question in the chosen script with KaTeX maths, and every message has the right `lang` attribute.
-- ✅ A wrong answer gets a shaking mistake pill, with no answer given.
+## Core lesson & Interactive Explain Board (Kannada, Hindi, Tamil, English)
+- ✅ Example `3x + 7 = 22` starts with a 3-beat visual explanation on the **Explain Board** where **every beat** renders an active 4K SVG diagram (Beat 1: initial balance `3x + 7 = 22`; Beat 2: operation `− 7 | − 7` on both pans; Beat 3: `3x = ?` with pulsing `?` unknown badge), followed by the **Your turn** card with method choice pills (`choices`), voice, typing, and Scratchpad controls.
+- ✅ **Basics / Concept Mode (`✦ Teach basics`):** Tapping the Basics button on the Explain Board or the `#basicsBtn` chip teaches the underlying concept step-by-step across 3 visual beats with definitions and everyday Indian analogies **without interrogating the student with questions** (`question: ""`, `choices: []`).
+- ✅ A wrong answer (`3x = 22`) gets a shaking mistake pill in the student's native script, with no answer given.
 - ✅ **H** and the Hint chip climb the ladder one rung at a time. The bead travels and used rungs keep an ember.
 - ✅ Correct steps are handwritten into Your solution with a check mark that draws itself.
-- ✅ Solving shows the flip-in solved card, stars, 3D confetti, a mint orb, and a star flying into My Sky.
+- ✅ Solving (`3x = 15, so x = 5`) confirms `solved: true` without leaking the answer beforehand, shows the flip-in solved card, stars, 3D confetti, a mint orb, and a star flying into My Sky.
 - ✅ Explain it back (typed and by voice) shows the score ring counting up with ticks lighting in sequence.
 - ✅ The parent voice note plays with karaoke, and WhatsApp opens with the text. Share sends one WAV file, or downloads it.
 - ✅ Words to know fills with flip cards, and Listen works.
-- ⏳ Pure / Mixed / + English changes the wording (the prompt rules are in place, but this needs the real model).
+- ✅ **4 Language Modes verified with real Gemini key:**
+  - `pure` (Fully regional): textbook regional terms on screen and in voice.
+  - `mixed` (Regional + English words): natural classroom regional speech with English technical terms.
+  - `english` (Read English, hear regional): English textbook display on screen + regional spoken explanation and synced regional subtitle line.
+  - `bilingual` (Both on screen): English and regional lines together on screen + natural regional voice.
 - ✅ **N** starts a new problem and every panel resets.
 
 ## Voice
