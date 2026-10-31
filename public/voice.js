@@ -25,7 +25,7 @@ export function sentences(text, lang) {
   // Tiny fragments ride along with their neighbour; never more than 8 sentences.
   const merged = [];
   for (const s of out) {
-    if (merged.length && (s.length < 14 || merged[merged.length - 1].length < 14) && (merged[merged.length - 1].length + s.length) < 200) merged[merged.length - 1] += ` ${s}`;
+    if (merged.length && (s.length < 5 || merged[merged.length - 1].length < 5) && (merged[merged.length - 1].length + s.length) < 200) merged[merged.length - 1] += ` ${s}`;
     else merged.push(s);
   }
   while (merged.length > 8) { const last = merged.pop(); merged[merged.length - 1] += ` ${last}`; }
@@ -55,6 +55,7 @@ export class Voice {
     this.ctx = null;
     this.speaking = false;
     this.premiumBroken = 0; // timestamp of the last total failure, so we don't hammer a dead voice service
+    this.predecoded = new Map();
     const unlock = () => { this.context(); removeEventListener('pointerdown', unlock); removeEventListener('keydown', unlock); };
     addEventListener('pointerdown', unlock);
     addEventListener('keydown', unlock);
@@ -105,19 +106,36 @@ export class Voice {
     try { return await ctx.decodeAudioData(arrayBuffer.slice(0)); } catch { return null; }
   }
 
+  seed(sentence, lang, audioObj) {
+    if (!sentence || !audioObj?.audio) return;
+    const bytes = b64ToBytes(audioObj.audio);
+    this.toCache(sentence, lang, bytes);
+    const key = this.cacheKey(sentence, lang);
+    const bufPromise = this.decode(bytes.buffer);
+    this.predecoded.set(key, { bufPromise, by: audioObj.by || 'stream', ms: audioObj.ms || 1 });
+  }
+
   // Returns an array of promises, one AudioBuffer (or null) per sentence, fetched as fast as possible.
   synth(ss, lang) {
-    const out = ss.map(() => null);
     const misses = [];
     const tSynth0 = performance.now();
     const sentStats = ss.map((s, i) => ({ index: i, text: s, ms: 0, by: 'cache', cached: true }));
     window.__lastVoiceTimings = sentStats;
-    const looked = ss.map((s, i) => this.fromCache(s, lang).then((ab) => {
-      if (ab) { sentStats[i].ms = Math.round(performance.now() - tSynth0); return ab; }
-      sentStats[i].cached = false;
-      misses.push(i);
-      return null;
-    }));
+    const looked = ss.map((s, i) => {
+      const pre = this.predecoded.get(this.cacheKey(s, lang));
+      if (pre) {
+        sentStats[i].ms = pre.ms || Math.max(1, Math.round(performance.now() - tSynth0));
+        sentStats[i].by = pre.by || 'stream';
+        sentStats[i].cached = false;
+        return pre.bufPromise.then((buf) => ({ kind: 'buf', buf }));
+      }
+      return this.fromCache(s, lang).then((ab) => {
+        if (ab) { sentStats[i].ms = Math.max(1, Math.round(performance.now() - tSynth0)); return { kind: 'ab', ab }; }
+        sentStats[i].cached = false;
+        misses.push(i);
+        return null;
+      });
+    });
     const settle = Promise.all(looked).then(async (cached) => {
       misses.sort((a, b) => a - b);
       const groups = [];
@@ -140,11 +158,13 @@ export class Voice {
         });
         if (retry.length) await fetchGroup(retry, attempt + 1);
       };
-      const promises = groups.map((g) => fetchGroup(g).catch((e) => { g.forEach((i) => fetched.set(i, null)); throw e; }));
+      const p0 = groups.length ? fetchGroup(groups[0]).catch((e) => { groups[0].forEach((i) => fetched.set(i, null)); throw e; }) : Promise.resolve();
+      const promises = groups.map((g, gi) => (gi === 0 ? p0 : p0.catch(() => {}).then(() => fetchGroup(g).catch((e) => { g.forEach((i) => fetched.set(i, null)); throw e; }))));
       return { cached, promises, fetched };
     });
     return ss.map((_, i) => settle.then(async ({ cached, promises, fetched }) => {
-      if (cached[i]) return this.decode(cached[i]);
+      if (cached[i]?.kind === 'buf') return cached[i].buf;
+      if (cached[i]?.kind === 'ab') return this.decode(cached[i].ab);
       const gi = misses.indexOf(i);
       const group = gi === 0 ? 0 : Math.floor((gi - 1) / 3) + 1;
       try { await promises[group]; } catch (e) { if (gi === 0 || i === 0) throw e; return null; }

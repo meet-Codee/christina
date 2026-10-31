@@ -101,6 +101,66 @@ export async function api(action, body, { method, retried = false, quiet = false
   throw err;
 }
 
+export async function apiStream(action, body, { signal, onEvent } = {}) {
+  if (!navigator.onLine) throw Object.assign(new Error(ui('offline')), { code: 'offline' });
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 35_000);
+  signal?.addEventListener('abort', () => ac.abort());
+  let res;
+  try {
+    res = await fetch(`/api/${action}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(S.passcode ? { 'x-passcode': S.passcode } : {}) },
+      body: JSON.stringify(body || {}),
+      signal: ac.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if (signal?.aborted) throw Object.assign(new Error('cancelled'), { code: 'aborted' });
+    if (!navigator.onLine) throw Object.assign(new Error(ui('offline')), { code: 'offline' });
+    if (e?.name === 'AbortError') throw Object.assign(new Error('That took too long. Try again.'), { code: 'timeout' });
+    throw Object.assign(new Error("Can't reach Christina's server. Is it still running? Try again in a moment."), { code: 'network' });
+  }
+  if (!res.ok || !res.body) {
+    clearTimeout(timer);
+    let data = {};
+    try { data = await res.json(); } catch {}
+    throw Object.assign(new Error(data.error || `Something went wrong (${res.status}).`), { code: data.code || 'server', status: res.status });
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  let finalReply = null;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const block = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        for (const line of block.split('\n')) {
+          const t = line.trim();
+          if (!t.startsWith('data:')) continue;
+          const raw = t.slice(5).trim();
+          if (!raw) continue;
+          let evt;
+          try { evt = JSON.parse(raw); } catch { continue; }
+          if (evt.type === 'error') {
+            throw Object.assign(new Error(evt.error || 'Something went wrong.'), { code: evt.code || 'server', status: evt.status || 502 });
+          }
+          if (evt.type === 'done') finalReply = evt.reply;
+          onEvent?.(evt);
+        }
+      }
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+  return finalReply;
+}
+
 // ───────────────────────── Toasts ─────────────────────────
 export function toast(text, { kind = 'info', ms = 4200, action, onAction } = {}) {
   const wrap = $('toasts');
@@ -544,32 +604,49 @@ function showThinking(label) {
 function removeThinking() { $('thinking')?.remove(); $('lessonBusy')?.remove(); }
 
 // Christina's message: arcs in, words stream, voice starts, the spoken word glows (karaoke).
-export function addTutor(r, { speak = true, history = true, extra, kind = 'reply' } = {}) {
+export function addTutor(r, { speak = true, history = true, extra, kind = 'reply', previewEl = null, earlySpoken = '' } = {}) {
   removeThinking();
-  const el = document.createElement('div');
-  el.className = 'msg tutor glass-2 z2';
   r = { ...r, language: r.language || S.prefs.lang, mix: r.mix || S.prefs.mix };
-  el.lang = r.mix === 'english' ? 'en' : r.language;
-  el.innerHTML = `<span class="edge-sweep" aria-hidden="true"></span><div class="msg-who">Christina</div><div class="msg-text"></div><div class="msg-foot"></div>`;
-  log.appendChild(el);
-  animate(el, [
-    { opacity: 0, transform: 'rotateX(18deg) translateY(24px) translateZ(-40px)', filter: 'blur(10px)' },
-    { opacity: 1, transform: 'none', filter: 'blur(0)' },
-  ], { duration: DUR.l, easing: EASE.out, heavy: true }, 'enter');
+  const el = previewEl || document.createElement('div');
+  if (!previewEl) {
+    el.className = 'msg tutor glass-2 z2';
+    el.lang = r.mix === 'english' ? 'en' : r.language;
+    el.innerHTML = `<span class="edge-sweep" aria-hidden="true"></span><div class="msg-who">Christina</div><div class="msg-text"></div><div class="msg-foot"></div>`;
+    log.appendChild(el);
+    animate(el, [
+      { opacity: 0, transform: 'rotateX(18deg) translateY(24px) translateZ(-40px)', filter: 'blur(10px)' },
+      { opacity: 1, transform: 'none', filter: 'blur(0)' },
+    ], { duration: DUR.l, easing: EASE.out, heavy: true }, 'enter');
+  } else {
+    el.lang = r.mix === 'english' ? 'en' : r.language;
+  }
   const textEl = el.querySelector('.msg-text');
-  stream(textEl, rich(r.screen));
-  if (window.__curTurn && !window.__curTurn.tText) {
-    window.__curTurn.tText = performance.now();
-    window.__curTurn.t1 = Math.round(window.__curTurn.tText - window.__curTurn.t0);
-    window.__curTurn.by = r.by || 'unknown';
+  if (previewEl) textEl.innerHTML = rich(r.screen);
+  else stream(textEl, rich(r.screen));
+  if (window.__curTurn) {
+    if (!window.__curTurn.tText) {
+      window.__curTurn.tText = performance.now();
+      window.__curTurn.t1 = Math.round(window.__curTurn.tText - window.__curTurn.t0);
+    }
+    window.__curTurn.by = r.by || window.__curTurn.by || 'unknown';
     window.__curTurn.screen = r.screen;
     window.__curTurn.speak = r.speak;
+    if (window.__timings?.length && window.__curTurn.tAudio) {
+      const last = window.__timings[window.__timings.length - 1];
+      if (last && last.t0 === window.__curTurn.t0) {
+        last.by = window.__curTurn.by;
+        last.screen = r.screen;
+        last.speak = r.speak;
+      }
+    }
   }
-  if (r.mix === 'english' || r.mix === 'bilingual') {
+  if ((r.mix === 'english' || r.mix === 'bilingual') && !el.querySelector('.spoken-subtitle')) {
     const sub = document.createElement('div'); sub.className = 'spoken-subtitle'; sub.lang = r.language;
     sub.innerHTML = rich(r.speak || ''); el.appendChild(sub);
   }
-  const foot = el.querySelector('.msg-foot');
+  let foot = el.querySelector('.msg-foot');
+  if (!foot) { foot = document.createElement('div'); foot.className = 'msg-foot'; el.appendChild(foot); }
+  foot.innerHTML = '';
   if (r.mistake) {
     const m = document.createElement('span');
     m.className = 'mistake';
@@ -591,13 +668,21 @@ export function addTutor(r, { speak = true, history = true, extra, kind = 'reply
   scrollLog();
   if (history && S.lesson) S.lesson.history.push({ role: 'assistant', content: [r.screen, r.question].filter(Boolean).join('\n') });
   S.lastReply = { el, r };
+  const btn = el.querySelector('.listen-btn');
   if (r.beats?.length) {
     explain.show(r, () => speakMessage(el, r, el.querySelector('.listen-btn')));
     $('transcriptLabel').textContent = lessonCopy(r.language).transcript;
     $('transcript').open = isPhone();
   }
-  if (speak && r.speak) speakMessage(el, r, el.querySelector('.listen-btn'));
-  else setMood('idle');
+  if (earlySpoken && earlySpoken === r.speak && S.activeKaraoke) {
+    const kEl = el.querySelector('.spoken-subtitle') || textEl;
+    Object.assign(S.activeKaraoke, { r, btn, ...karaokeMap(kEl, r.speak) });
+    if (voice.speaking) btn?.classList.add('playing');
+  } else if (speak && r.speak) {
+    speakMessage(el, r, btn);
+  } else if (!voice.speaking) {
+    setMood('idle');
+  }
   return el;
 }
 
@@ -629,16 +714,17 @@ function karaokeMap(textEl, speakText) {
 function speakMessage(el, r, btn) {
   const textEl = el.querySelector('.spoken-subtitle') || el.querySelector('.msg-text');
   if (btn?.classList.contains('playing')) { voice.stop(); return; }
-  if (r.beats?.length) explain.show(r, () => speakMessage(el, r, btn));
-  const { tokens, map } = karaokeMap(textEl, r.speak);
-  let lit = null;
-  const clear = () => { lit?.classList.remove('kw'); lit = null; };
+  if (r.beats?.length) explain.show(r, () => speakMessage(el, r, el.querySelector('.listen-btn')));
+  const state = { el, r, btn, lit: null, ...karaokeMap(textEl, r.speak) };
+  S.activeKaraoke = state;
+  const clear = () => { state.lit?.classList.remove('kw'); state.lit = null; };
   document.querySelectorAll('.w.kw').forEach((w) => w.classList.remove('kw')); // only one word is ever lit
   document.querySelectorAll('.listen-btn.playing').forEach((b) => b.classList.remove('playing'));
-  btn?.classList.add('playing');
+  state.btn?.classList.add('playing');
   voice.say(r.speak, {
     lang: r.language || S.prefs.lang,
     onStart: () => {
+      state.btn?.classList.add('playing');
       if (window.__curTurn && !window.__curTurn.tAudio) {
         window.__curTurn.tAudio = performance.now();
         window.__curTurn.t2 = Math.round(window.__curTurn.tAudio - (window.__curTurn.tText || window.__curTurn.t0));
@@ -650,14 +736,25 @@ function speakMessage(el, r, btn) {
       }
     },
     onWord: (i) => {
-      explain.word(i, r);
+      if (state.r?.beats?.length) explain.word(i, state.r);
       if (S.prefs.muted) return;
-      const t = tokens[map[i]];
-      if (t && t !== lit) { clear(); t.classList.add('kw'); lit = t; }
+      const t = state.tokens[state.map[i]];
+      if (t && t !== state.lit) { clear(); t.classList.add('kw'); state.lit = t; }
     },
-    onEnd: () => { clear(); btn?.classList.remove('playing'); if (!callActive()) setMood('idle'); },
+    onEnd: () => {
+      clear();
+      state.btn?.classList.remove('playing');
+      if (S.activeKaraoke === state) S.activeKaraoke = null;
+      if (!callActive()) setMood('idle');
+    },
   });
-  const stopClear = () => { if (!voice.speaking) { clear(); btn?.classList.remove('playing'); } else setTimeout(stopClear, 300); };
+  const stopClear = () => {
+    if (!voice.speaking) {
+      clear();
+      state.btn?.classList.remove('playing');
+      if (S.activeKaraoke === state) S.activeKaraoke = null;
+    } else setTimeout(stopClear, 300);
+  };
   setTimeout(stopClear, 600);
 }
 
@@ -698,15 +795,61 @@ export async function askTutor({ message = '', kind = 'answer', hintLevel } = {}
   const hint = hintLevel ?? lesson.hint;
   S.busy = true;
   showThinking();
+  let previewEl = null;
+  let earlySpoken = '';
+  const payload = {
+    language: S.prefs.lang, grade: S.prefs.grade, mix: S.prefs.mix, problem: lesson.problem, message, history, hint_level: hint, kind,
+    encourage: S.prefs.encourage || undefined, confident: S.prefs.confident || undefined,
+    voice: S.prefs.voice, pace: voice.pace(),
+  };
+  const ensurePreview = (text) => {
+    if (!previewEl) {
+      removeThinking();
+      previewEl = document.createElement('div');
+      previewEl.className = 'msg tutor glass-2 z2';
+      previewEl.lang = S.prefs.mix === 'english' ? 'en' : S.prefs.lang;
+      previewEl.innerHTML = `<span class="edge-sweep" aria-hidden="true"></span><div class="msg-who">Christina</div><div class="msg-text"></div><div class="msg-foot"></div>`;
+      log.appendChild(previewEl);
+      animate(previewEl, [
+        { opacity: 0, transform: 'rotateX(18deg) translateY(24px) translateZ(-40px)', filter: 'blur(10px)' },
+        { opacity: 1, transform: 'none', filter: 'blur(0)' },
+      ], { duration: DUR.l, easing: EASE.out, heavy: true }, 'enter');
+      if (window.__curTurn && !window.__curTurn.tText) {
+        window.__curTurn.tText = performance.now();
+        window.__curTurn.t1 = Math.round(window.__curTurn.tText - window.__curTurn.t0);
+      }
+    }
+    if (text) {
+      previewEl.querySelector('.msg-text').innerHTML = rich(text);
+      scrollLog();
+    }
+  };
   try {
-    const r = await api('tutor', {
-      language: S.prefs.lang, grade: S.prefs.grade, mix: S.prefs.mix, problem: lesson.problem, message, history, hint_level: hint, kind,
-      encourage: S.prefs.encourage || undefined, confident: S.prefs.confident || undefined,
-    }, { signal: ctrl.signal });
-    if (ctrl.signal.aborted || S.lesson !== lesson) return;
-    handleReply(r, { kind });
+    let r = await apiStream('tutor-stream', payload, {
+      signal: ctrl.signal,
+      onEvent: (evt) => {
+        if (ctrl.signal.aborted || S.lesson !== lesson) return;
+        if (evt.type === 'preview') {
+          ensurePreview(evt.screen || evt.speak);
+        } else if (evt.type === 'speak') {
+          ensurePreview(evt.screen || evt.speak);
+          if (!earlySpoken && evt.speak) {
+            earlySpoken = evt.speak;
+            speakMessage(previewEl, { speak: earlySpoken, screen: evt.screen || earlySpoken, language: S.prefs.lang, mix: S.prefs.mix });
+          }
+        } else if (evt.type === 'audio' && evt.text) {
+          voice.seed(evt.text, S.prefs.lang, evt);
+        }
+      },
+    }).catch(async (err) => {
+      if (err.code === 'aborted' || ctrl.signal.aborted || previewEl) throw err;
+      return api('tutor', payload, { signal: ctrl.signal });
+    });
+    if (ctrl.signal.aborted || S.lesson !== lesson || !r) return;
+    handleReply(r, { kind, previewEl, earlySpoken });
   } catch (e) {
     if (e.code === 'aborted' || ctrl.signal.aborted || S.lesson !== lesson) return;
+    previewEl?.remove();
     if (message) { lesson.history.pop(); }
     addError(e, () => askTutor({ message, kind, hintLevel }));
   } finally {
@@ -714,7 +857,7 @@ export async function askTutor({ message = '', kind = 'answer', hintLevel } = {}
   }
 }
 
-export function handleReply(r, { kind = 'answer', source = 'tutor' } = {}) {
+export function handleReply(r, { kind = 'answer', source = 'tutor', previewEl = null, earlySpoken = '' } = {}) {
   const lesson = S.lesson;
   if (!lesson) return;
   const prevRung = lesson.hint;
@@ -732,7 +875,7 @@ export function handleReply(r, { kind = 'answer', source = 'tutor' } = {}) {
   if (S.prefs.encourage && (r.board || r.solved || r.mood === 'confident') && !shouldEncourage) S.prefs.encourage = false;
   S.prefs.confident = r.mood === 'confident' && !r.solved;
 
-  addTutor(r);
+  addTutor(r, { previewEl, earlySpoken });
   if (r.board) addBoardLine(r.board);
   if (r.terms?.length) addWords(r.terms);
   renderLadder(prevRung !== lesson.hint);
@@ -746,6 +889,7 @@ export function handleReply(r, { kind = 'answer', source = 'tutor' } = {}) {
   else setTimeout(() => { if (!voice.speaking && !S.busy) setMood('idle'); }, 400);
   saveRecent();
 }
+
 
 export function requestHint() {
   const lesson = S.lesson;

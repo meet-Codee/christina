@@ -91,6 +91,29 @@ async function api(req, res, action) {
       return send(res, big ? 413 : 400, JSON.stringify({ error: big ? 'That was too big to send. Try a shorter recording or a smaller photo.' : 'The request was not valid JSON.', code: big ? 'too_large' : 'bad_input' }), { 'content-type': MIME['.json'] });
     }
   }
+  if (String(action || '').toLowerCase() === 'tutor-stream') {
+    req.socket?.setNoDelay?.(true);
+    let headersSent = false;
+    const ensureHeaders = () => {
+      if (headersSent) return;
+      headersSent = true;
+      res.writeHead(200, {
+        'content-type': 'text/event-stream; charset=utf-8',
+        'cache-control': 'no-cache, no-store',
+        'connection': 'keep-alive',
+        'x-accel-buffering': 'no',
+      });
+      res.flushHeaders?.();
+    };
+    const out = await handle(action, body, req.headers, req.method, (evt) => {
+      ensureHeaders();
+      res.write(`data: ${JSON.stringify(evt)}\n\n`);
+    });
+    if (!headersSent) {
+      return send(res, out.status, JSON.stringify(out.body), { 'content-type': MIME['.json'], 'cache-control': 'no-store' });
+    }
+    return res.end();
+  }
   const out = await handle(action, body, req.headers, req.method);
   send(res, out.status, JSON.stringify(out.body), { 'content-type': MIME['.json'], 'cache-control': 'no-store' });
 }
